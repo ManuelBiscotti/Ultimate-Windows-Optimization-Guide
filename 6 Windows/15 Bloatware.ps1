@@ -43,15 +43,15 @@
 
     function show-menu {
 	Clear-Host
-    Write-Host " 1. Exit"
-	Write-Host " 2. Remove : All Bloatware (Recommended)"
-    Write-Host " 3. Install: Store"
-	Write-Host " 4. Install: All UWP Apps"
-    Write-Host " 5. Install: UWP Features"
-    Write-Host " 6. Install: Legacy Features"
-	Write-Host " 7. Install: One Drive"
-    Write-Host " 8. Install: Remote Desktop Connection"
-    Write-Host " 9. Install: Legacy Snipping Tool W10"
+	Write-Host " 1. Remove : All Bloatware (Recommended)"
+    Write-Host " 2. Install: Store"
+	Write-Host " 3. Install: All UWP Apps"
+    Write-Host " 4. Install: UWP Features"
+    Write-Host " 5. Install: Legacy Features"
+	Write-Host " 6. Install: One Drive"
+    Write-Host " 7. Install: Remote Desktop Connection"
+    Write-Host " 8. Install: Legacy Snipping Tool W10"
+	Write-Host " 9. Install: Legacy Paint W10"
 		              }
 	show-menu
     while ($true) {
@@ -61,13 +61,82 @@
     1 {
 
 Clear-Host
-exit
-
-      }
-    2 {
-
-Clear-Host
 $progresspreference = 'silentlycontinue'
+Write-Host "Start Menu Taskbar: Clean . . ."
+# CLEAN TASKBAR
+# unpin all taskbar icons
+cmd /c "reg delete HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Taskband /f >nul 2>&1"
+Remove-Item -Recurse -Force "$env:USERPROFILE\AppData\Roaming\Microsoft\Internet Explorer\Quick Launch" -ErrorAction SilentlyContinue | Out-Null
+New-Item -Path "$env:USERPROFILE\AppData\Roaming\Microsoft\Internet Explorer" -Name "Quick Launch" -ItemType Directory -ErrorAction SilentlyContinue | Out-Null
+New-Item -Path "$env:USERPROFILE\AppData\Roaming\Microsoft\Internet Explorer\Quick Launch" -Name "User Pinned" -ItemType Directory -ErrorAction SilentlyContinue | Out-Null
+New-Item -Path "$env:USERPROFILE\AppData\Roaming\Microsoft\Internet Explorer\Quick Launch\User Pinned" -Name "TaskBar" -ItemType Directory -ErrorAction SilentlyContinue | Out-Null
+New-Item -Path "$env:USERPROFILE\AppData\Roaming\Microsoft\Internet Explorer\Quick Launch\User Pinned" -Name "ImplicitAppShortcuts" -ItemType Directory -ErrorAction SilentlyContinue | Out-Null
+# CLEAN START MENU W11
+if ((Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion').CurrentBuild -ge 22000) {
+# Remove all pinned apps from Start https://github.com/Raphire/Win11Debloat/tree/refs/heads/master/Assets/Start				
+Get-Process StartMenuExperienceHost | Stop-Process -Force | Out-Null; Start-Sleep -Milliseconds 200		
+$dst="$env:LOCALAPPDATA\Packages\Microsoft.Windows.StartMenuExperienceHost_cw5n1h2txyewy\LocalState\start2.bin"		
+if (!(Test-Path (Split-Path $dst))){New-Item -Path (Split-Path $dst) -ItemType Directory -Force}  		
+Invoke-WebRequest -Uri 'https://github.com/Raphire/Win11Debloat/raw/refs/heads/master/Assets/Start/start2.bin' -OutFile $dst -UseBasicParsing  		
+}
+# CLEAN START MENU W10
+elseif ((Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion').CurrentBuild -le 19045) {
+# delete startmenulayout.xml
+Remove-Item -Recurse -Force "$env:SystemDrive\Windows\StartMenuLayout.xml"
+# create startmenulayout.xml
+$MultilineComment = @'
+<LayoutModificationTemplate xmlns:defaultlayout="http://schemas.microsoft.com/Start/2014/FullDefaultLayout" xmlns:start="http://schemas.microsoft.com/Start/2014/StartLayout" Version="1" xmlns:taskbar="http://schemas.microsoft.com/Start/2014/TaskbarLayout" xmlns="http://schemas.microsoft.com/Start/2014/LayoutModification">
+	<LayoutOptions StartTileGroupCellWidth="6" />
+	<DefaultLayoutOverride>
+		<StartLayoutCollection>
+			<defaultlayout:StartLayout GroupCellWidth="6" />
+		</StartLayoutCollection>
+	</DefaultLayoutOverride>
+</LayoutModificationTemplate>
+'@
+Set-Content -Path "C:\Windows\StartMenuLayout.xml" -Value $MultilineComment -Force -Encoding ASCII		
+# assign startmenulayout.xml registry
+$layoutFile="C:\Windows\StartMenuLayout.xml"
+$regAliases = @("HKLM", "HKCU")
+foreach ($regAlias in $regAliases){
+$basePath = $regAlias + ":\SOFTWARE\Policies\Microsoft\Windows"		
+$keyPath = $basePath + "\Explorer"		
+IF(!(Test-Path -Path $keyPath)) { New-Item -Path $basePath -Name "Explorer" | Out-Null }			
+Set-ItemProperty -Path $keyPath -Name "LockedStartLayout" -Value 1 | Out-Null		
+Set-ItemProperty -Path $keyPath -Name "StartLayoutFile" -Value $layoutFile | Out-Null		
+}
+Stop-Process -Force -Name explorer -ErrorAction SilentlyContinue | Out-Null	
+Timeout /T 5 | Out-Null
+# disable lockedstartlayout registry		
+foreach ($regAlias in $regAliases){		
+$basePath = $regAlias + ":\SOFTWARE\Policies\Microsoft\Windows"		
+$keyPath = $basePath + "\Explorer"		
+Set-ItemProperty -Path $keyPath -Name "LockedStartLayout" -Value 0 | Out-Null		
+}
+# restart explorer
+Stop-Process -Force -Name explorer -ErrorAction SilentlyContinue | Out-Null
+# delete startmenulayout.xml
+Remove-Item -Recurse -Force "$env:SystemDrive\Windows\StartMenuLayout.xml" -ErrorAction SilentlyContinue | Out-Null
+Clear-Host	
+}
+else{Write-Host $_.Exception.Message -ForegroundColor Red}
+# Signout Lockscreen
+# create new image
+Add-Type -AssemblyName System.Windows.Forms
+$screenWidth = [System.Windows.Forms.SystemInformation]::PrimaryMonitorSize.Width
+$screenHeight = [System.Windows.Forms.SystemInformation]::PrimaryMonitorSize.Height
+Add-Type -AssemblyName System.Drawing
+$file = "C:\Windows\Black.jpg"
+$edit = New-Object System.Drawing.Bitmap $screenWidth, $screenHeight
+$color = [System.Drawing.Brushes]::Black
+$graphics = [System.Drawing.Graphics]::FromImage($edit)
+$graphics.FillRectangle($color, 0, 0, $edit.Width, $edit.Height)
+$graphics.Dispose()
+$edit.Save($file)
+$edit.Dispose()
+# set image settings
+reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\PersonalizationCSP" /v "LockScreenImagePath" /t REG_SZ /d "C:\Windows\Black.jpg" /f | Out-Null
+reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\PersonalizationCSP" /v "LockScreenImageStatus" /t REG_DWORD /d "1" /f | Out-Null
 Write-Host "Uninstalling: UWP Apps. Please wait . . ."
 # uninstall all uwp apps keep nvidia & cbs
 # cbs needed for w11 explorer
@@ -79,11 +148,34 @@ Timeout /T 2 | Out-Null
 # install heif image extension needed for some files
 Get-AppXPackage -AllUsers *Microsoft.HEIFImageExtension* | Foreach {Add-AppxPackage -DisableDevelopmentMode -Register -ErrorAction SilentlyContinue "$($_.InstallLocation)\AppXManifest.xml"}
 Timeout /T 2 | Out-Null
-# install paint w11
-Get-AppXPackage -AllUsers *Microsoft.Paint* | Foreach {Add-AppxPackage -DisableDevelopmentMode -Register -ErrorAction SilentlyContinue "$($_.InstallLocation)\AppXManifest.xml"}
+# install notepad w11
+if ((Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion').CurrentBuild -ge 22000){
+# create notepad start menu shortcut
+$shortcut = $shell.CreateShortcut("C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Accessories\Notepad.lnk")
+$shortcut.TargetPath = "$env:SystemRoot\System32\notepad.exe"
+$shortcut.Save()
+# restore new text document context menu item
+Invoke-WebRequest -Uri "https://github.com/vishnusai-karumuri/Registry-Fixes/raw/refs/heads/master/Restore_New_Text_Document_context_menu_item.reg" -OutFile "$env:TEMP\Restore_New_Text_Document_context_menu_item.reg"
+Start-Process regedit.exe -ArgumentList "/s `"$env:TEMP\Restore_New_Text_Document_context_menu_item.reg`"" -Wait	
+# add edit with notepad to right-click context menu
+# create reg file
+$MultilineComment = @'
+Windows Registry Editor Version 5.00
+
+[HKEY_CLASSES_ROOT\*\shell\Edit with &Notepad]
+"Icon"="C:\\Windows\\System32\\notepad.exe,0"
+
+[HKEY_CLASSES_ROOT\*\shell\Edit with &Notepad\command]
+@="C:\\Windows\\System32\\notepad.exe \"%1\""
+'@
+Set-Content -Path "$env:TEMP\Restore_New_Text_Document_context_menu_item.reg" -Value $MultilineComment -Force
+# import reg file
+Regedit.exe /S "$env:TEMP\Restore_New_Text_Document_context_menu_item.reg"
+}
+else{Write-Host $_.Exception.Message -ForegroundColor Red}
 Timeout /T 2 | Out-Null
-# install photos
-Get-AppXPackage -AllUsers *Microsoft.Windows.Photos* | Foreach {Add-AppxPackage -DisableDevelopmentMode -Register -ErrorAction SilentlyContinue "$($_.InstallLocation)\AppXManifest.xml"}
+# install photo viewer
+'tif','tiff','bmp','dib','gif','jfif','jpe','jpeg','jpg','jxr','png','ico'|ForEach-Object{reg add "HKLM\SOFTWARE\Microsoft\Windows Photo Viewer\Capabilities\FileAssociations" /v ".${_}" /t REG_SZ /d "PhotoViewer.FileAssoc.Tiff" /f >$null 2>&1;reg add "HKCU\SOFTWARE\Classes\.${_}" /ve /t REG_SZ /d "PhotoViewer.FileAssoc.Tiff" /f >$null 2>&1}
 Timeout /T 2 | Out-Null
 # install notepad w11
 Get-AppXPackage -AllUsers *Microsoft.WindowsNotepad* | Foreach {Add-AppxPackage -DisableDevelopmentMode -Register -ErrorAction SilentlyContinue "$($_.InstallLocation)\AppXManifest.xml"}
@@ -91,7 +183,7 @@ Timeout /T 2 | Out-Null
 Clear-Host
 Write-Host "Uninstalling: UWP Features. Please wait . . ."
 # uninstall all uwp features
-# network drivers, paint & notepad left out
+# network drivers, media player & notepad left out
 Remove-WindowsCapability -Online -Name "App.StepsRecorder~~~~0.0.1.0" | Out-Null
 Remove-WindowsCapability -Online -Name "App.Support.QuickAssist~~~~0.0.1.0" | Out-Null
 Remove-WindowsCapability -Online -Name "Browser.InternetExplorer~~~~0.0.11.0" | Out-Null
@@ -99,67 +191,15 @@ Remove-WindowsCapability -Online -Name "DirectX.Configuration.Database~~~~0.0.1.
 Remove-WindowsCapability -Online -Name "Hello.Face.18967~~~~0.0.1.0" | Out-Null
 Remove-WindowsCapability -Online -Name "Hello.Face.20134~~~~0.0.1.0" | Out-Null
 Remove-WindowsCapability -Online -Name "MathRecognizer~~~~0.0.1.0" | Out-Null
-Remove-WindowsCapability -Online -Name "Media.WindowsMediaPlayer~~~~0.0.12.0" | Out-Null
+# Remove-WindowsCapability -Online -Name "Media.WindowsMediaPlayer~~~~0.0.12.0" | Out-Null
 Remove-WindowsCapability -Online -Name "Microsoft.Wallpapers.Extended~~~~0.0.1.0" | Out-Null
 # Remove-WindowsCapability -Online -Name "Microsoft.Windows.Ethernet.Client.Intel.E1i68x64~~~~0.0.1.0" | Out-Null
 # Remove-WindowsCapability -Online -Name "Microsoft.Windows.Ethernet.Client.Intel.E2f68~~~~0.0.1.0" | Out-Null
 # Remove-WindowsCapability -Online -Name "Microsoft.Windows.Ethernet.Client.Realtek.Rtcx21x64~~~~0.0.1.0" | Out-Null
-# Remove-WindowsCapability -Online -Name "Microsoft.Windows.MSPaint~~~~0.0.1.0" | Out-Null
+Remove-WindowsCapability -Online -Name "Microsoft.Windows.MSPaint~~~~0.0.1.0" | Out-Null
 # Remove-WindowsCapability -Online -Name "Microsoft.Windows.Notepad.System~~~~0.0.1.0" | Out-Null
 # Remove-WindowsCapability -Online -Name "Microsoft.Windows.Notepad~~~~0.0.1.0" | Out-Null
 Remove-WindowsCapability -Online -Name "Microsoft.Windows.PowerShell.ISE~~~~0.0.1.0" | Out-Null
-# Remove-WindowsCapability -Online -Name "Microsoft.Windows.Wifi.Client.Broadcom.Bcmpciedhd63~~~~0.0.1.0" | Out-Null
-# Remove-WindowsCapability -Online -Name "Microsoft.Windows.Wifi.Client.Broadcom.Bcmpciedhd63~~~~0.0.1.0" | Out-Null
-# Remove-WindowsCapability -Online -Name "Microsoft.Windows.Wifi.Client.Broadcom.Bcmwl63al~~~~0.0.1.0" | Out-Null
-# Remove-WindowsCapability -Online -Name "Microsoft.Windows.Wifi.Client.Broadcom.Bcmwl63al~~~~0.0.1.0" | Out-Null
-# Remove-WindowsCapability -Online -Name "Microsoft.Windows.Wifi.Client.Broadcom.Bcmwl63a~~~~0.0.1.0" | Out-Null
-# Remove-WindowsCapability -Online -Name "Microsoft.Windows.Wifi.Client.Broadcom.Bcmwl63a~~~~0.0.1.0" | Out-Null
-# Remove-WindowsCapability -Online -Name "Microsoft.Windows.Wifi.Client.Intel.Netwbw02~~~~0.0.1.0" | Out-Null
-# Remove-WindowsCapability -Online -Name "Microsoft.Windows.Wifi.Client.Intel.Netwbw02~~~~0.0.1.0" | Out-Null
-# Remove-WindowsCapability -Online -Name "Microsoft.Windows.Wifi.Client.Intel.Netwew00~~~~0.0.1.0" | Out-Null
-# Remove-WindowsCapability -Online -Name "Microsoft.Windows.Wifi.Client.Intel.Netwew00~~~~0.0.1.0" | Out-Null
-# Remove-WindowsCapability -Online -Name "Microsoft.Windows.Wifi.Client.Intel.Netwew01~~~~0.0.1.0" | Out-Null
-# Remove-WindowsCapability -Online -Name "Microsoft.Windows.Wifi.Client.Intel.Netwew01~~~~0.0.1.0" | Out-Null
-# Remove-WindowsCapability -Online -Name "Microsoft.Windows.Wifi.Client.Intel.Netwlv64~~~~0.0.1.0" | Out-Null
-# Remove-WindowsCapability -Online -Name "Microsoft.Windows.Wifi.Client.Intel.Netwlv64~~~~0.0.1.0" | Out-Null
-# Remove-WindowsCapability -Online -Name "Microsoft.Windows.Wifi.Client.Intel.Netwns64~~~~0.0.1.0" | Out-Null
-# Remove-WindowsCapability -Online -Name "Microsoft.Windows.Wifi.Client.Intel.Netwns64~~~~0.0.1.0" | Out-Null
-# Remove-WindowsCapability -Online -Name "Microsoft.Windows.Wifi.Client.Intel.Netwsw00~~~~0.0.1.0" | Out-Null
-# Remove-WindowsCapability -Online -Name "Microsoft.Windows.Wifi.Client.Intel.Netwsw00~~~~0.0.1.0" | Out-Null
-# Remove-WindowsCapability -Online -Name "Microsoft.Windows.Wifi.Client.Intel.Netwtw02~~~~0.0.1.0" | Out-Null
-# Remove-WindowsCapability -Online -Name "Microsoft.Windows.Wifi.Client.Intel.Netwtw02~~~~0.0.1.0" | Out-Null
-# Remove-WindowsCapability -Online -Name "Microsoft.Windows.Wifi.Client.Intel.Netwtw04~~~~0.0.1.0" | Out-Null
-# Remove-WindowsCapability -Online -Name "Microsoft.Windows.Wifi.Client.Intel.Netwtw04~~~~0.0.1.0" | Out-Null
-# Remove-WindowsCapability -Online -Name "Microsoft.Windows.Wifi.Client.Intel.Netwtw06~~~~0.0.1.0" | Out-Null
-# Remove-WindowsCapability -Online -Name "Microsoft.Windows.Wifi.Client.Intel.Netwtw06~~~~0.0.1.0" | Out-Null
-# Remove-WindowsCapability -Online -Name "Microsoft.Windows.Wifi.Client.Intel.Netwtw08~~~~0.0.1.0" | Out-Null
-# Remove-WindowsCapability -Online -Name "Microsoft.Windows.Wifi.Client.Intel.Netwtw08~~~~0.0.1.0" | Out-Null
-# Remove-WindowsCapability -Online -Name "Microsoft.Windows.Wifi.Client.Intel.Netwtw10~~~~0.0.1.0" | Out-Null
-# Remove-WindowsCapability -Online -Name "Microsoft.Windows.Wifi.Client.Intel.Netwtw10~~~~0.0.1.0" | Out-Null
-# Remove-WindowsCapability -Online -Name "Microsoft.Windows.Wifi.Client.Marvel.Mrvlpcie8897~~~~0.0.1.0" | Out-Null
-# Remove-WindowsCapability -Online -Name "Microsoft.Windows.Wifi.Client.Marvel.Mrvlpcie8897~~~~0.0.1.0" | Out-Null
-# Remove-WindowsCapability -Online -Name "Microsoft.Windows.Wifi.Client.Qualcomm.Athw8x~~~~0.0.1.0" | Out-Null
-# Remove-WindowsCapability -Online -Name "Microsoft.Windows.Wifi.Client.Qualcomm.Athw8x~~~~0.0.1.0" | Out-Null
-# Remove-WindowsCapability -Online -Name "Microsoft.Windows.Wifi.Client.Qualcomm.Athwnx~~~~0.0.1.0" | Out-Null
-# Remove-WindowsCapability -Online -Name "Microsoft.Windows.Wifi.Client.Qualcomm.Athwnx~~~~0.0.1.0" | Out-Null
-# Remove-WindowsCapability -Online -Name "Microsoft.Windows.Wifi.Client.Qualcomm.Qcamain10x64~~~~0.0.1.0" | Out-Null
-# Remove-WindowsCapability -Online -Name "Microsoft.Windows.Wifi.Client.Qualcomm.Qcamain10x64~~~~0.0.1.0" | Out-Null
-# Remove-WindowsCapability -Online -Name "Microsoft.Windows.Wifi.Client.Ralink.Netr28x~~~~0.0.1.0" | Out-Null
-# Remove-WindowsCapability -Online -Name "Microsoft.Windows.Wifi.Client.Ralink.Netr28x~~~~0.0.1.0" | Out-Null
-# Remove-WindowsCapability -Online -Name "Microsoft.Windows.Wifi.Client.Realtek.Rtl8187se~~~~0.0.1.0" | Out-Null
-# Remove-WindowsCapability -Online -Name "Microsoft.Windows.Wifi.Client.Realtek.Rtl8187se~~~~0.0.1.0" | Out-Null
-# Remove-WindowsCapability -Online -Name "Microsoft.Windows.Wifi.Client.Realtek.Rtl8192se~~~~0.0.1.0" | Out-Null
-# Remove-WindowsCapability -Online -Name "Microsoft.Windows.Wifi.Client.Realtek.Rtl8192se~~~~0.0.1.0" | Out-Null
-# Remove-WindowsCapability -Online -Name "Microsoft.Windows.Wifi.Client.Realtek.Rtl819xp~~~~0.0.1.0" | Out-Null
-# Remove-WindowsCapability -Online -Name "Microsoft.Windows.Wifi.Client.Realtek.Rtl819xp~~~~0.0.1.0" | Out-Null
-# Remove-WindowsCapability -Online -Name "Microsoft.Windows.Wifi.Client.Realtek.Rtl85n64~~~~0.0.1.0" | Out-Null
-# Remove-WindowsCapability -Online -Name "Microsoft.Windows.Wifi.Client.Realtek.Rtl85n64~~~~0.0.1.0" | Out-Null
-# Remove-WindowsCapability -Online -Name "Microsoft.Windows.Wifi.Client.Realtek.Rtwlane01~~~~0.0.1.0" | Out-Null
-# Remove-WindowsCapability -Online -Name "Microsoft.Windows.Wifi.Client.Realtek.Rtwlane01~~~~0.0.1.0" | Out-Null
-# Remove-WindowsCapability -Online -Name "Microsoft.Windows.Wifi.Client.Realtek.Rtwlane13~~~~0.0.1.0" | Out-Null
-# Remove-WindowsCapability -Online -Name "Microsoft.Windows.Wifi.Client.Realtek.Rtwlane13~~~~0.0.1.0" | Out-Null
-# Remove-WindowsCapability -Online -Name "Microsoft.Windows.Wifi.Client.Realtek.Rtwlane~~~~0.0.1.0" | Out-Null
-# Remove-WindowsCapability -Online -Name "Microsoft.Windows.Wifi.Client.Realtek.Rtwlane~~~~0.0.1.0" | Out-Null
 Remove-WindowsCapability -Online -Name "Microsoft.Windows.WordPad~~~~0.0.1.0" | Out-Null
 Remove-WindowsCapability -Online -Name "OneCoreUAP.OneSync~~~~0.0.1.0" | Out-Null
 Remove-WindowsCapability -Online -Name "OpenSSH.Client~~~~0.0.1.0" | Out-Null
@@ -178,7 +218,8 @@ Write-Host "Uninstalling: Legacy Features. Please wait . . ."
 # Dism /Online /NoRestart /Disable-Feature /FeatureName:NetFx4-AdvSrvs | Out-Null
 Dism /Online /NoRestart /Disable-Feature /FeatureName:WCF-Services45 | Out-Null
 Dism /Online /NoRestart /Disable-Feature /FeatureName:WCF-TCP-PortSharing45 | Out-Null
-Dism /Online /NoRestart /Disable-Feature /FeatureName:MediaPlayback | Out-Null
+# media features left out
+# Dism /Online /NoRestart /Disable-Feature /FeatureName:MediaPlayback | Out-Null
 Dism /Online /NoRestart /Disable-Feature /FeatureName:Printing-PrintToPDFServices-Features | Out-Null
 Dism /Online /NoRestart /Disable-Feature /FeatureName:Printing-XPSServices-Features | Out-Null
 Dism /Online /NoRestart /Disable-Feature /FeatureName:Printing-Foundation-Features | Out-Null
@@ -206,6 +247,8 @@ Unregister-ScheduledTask -TaskName PLUGScheduler -Confirm:$false -ErrorAction Si
 # uninstall update for windows 10 for x64-based systems
 cmd /c "MsiExec.exe /X{B9A7A138-BFD5-4C73-A269-F78CCA28150E} /qn >nul 2>&1"
 cmd /c "MsiExec.exe /X{85C69797-7336-4E83-8D97-32A7C8465A3B} /qn >nul 2>&1"
+# (KB5001716)
+cmd /c "MsiExec.exe /X{B8D93870-98D1-4980-AFCA-E26563CDFB79} /qn >nul 2>&1"
 # stop onedrive running
 Stop-Process -Force -Name OneDrive -ErrorAction SilentlyContinue | Out-Null
 # uninstall onedrive w10
@@ -259,7 +302,7 @@ $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
 show-menu
 
       }
-    3 {
+    2 {
 
 Clear-Host
 $progresspreference = 'silentlycontinue'
@@ -273,7 +316,7 @@ $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
 show-menu
 
       }	  
-    4 {
+    3 {
 
 Clear-Host
 $progresspreference = 'silentlycontinue'
@@ -286,7 +329,7 @@ $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
 show-menu
 
       }	  
-    5 {
+    4 {
 
 Clear-Host
 Write-Host "Install: UWP Features . . ."
@@ -339,7 +382,7 @@ $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
 show-menu
 
       }
-    6 {
+    5 {
 
 Clear-Host
 Write-Host "Install: Legacy Features . . ."
@@ -395,7 +438,7 @@ $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
 show-menu
 
       }
-    7 {
+    6 {
 
 Clear-Host
 Write-Host "Installing: One Drive. Please wait . . ."
@@ -409,7 +452,7 @@ $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
 show-menu
 
       }	  
-    8 {
+    7 {
 
 Clear-Host
 Write-Host "Installing: Remote Desktop Connection. Please wait . . ."
@@ -423,22 +466,43 @@ $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
 show-menu
 
       }
-    9 {
+    8 {
 
 Clear-Host
 Write-Host "Installing: Legacy Snipping Tool W10. Please wait . . ."
-Write-Host ""
-Write-Host "Ignore installer error message on W11."
-Write-Host "If installer error message occurs W10, restart PC and rerun script."
-Write-Host ""
-# download snipping tool
-Get-FileFromWeb -URL "https://download.microsoft.com/download/f/4/e/f4e03465-34d1-49b6-af1a-2816ca4a2402/installers_signed/snippingtool_setup_x64.exe" -File "$env:TEMP\SnippingTool.exe"
-# install snipping tool
-cmd /c "%TEMP%\SnippingTool.exe >nul 2>&1"
+# Ensure target directory exists
+New-Item -Path "C:\Program Files\Windows NT\Accessories" -ItemType Directory -Force | Out-Null	
+# Ensure Accessories folder exists
+New-Item -Path "C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Accessories" -ItemType Directory -Force | Out-Null		
+# Snipping Tool (Windows 10 Version 1803)		
+Get-FileFromWeb -URL "https://github.com/ManueITest/Windows/raw/main/SnippingTool.zip" -File "$env:TEMP\SnippingTool.zip"		
+Expand-Archive -Path "$env:TEMP\SnippingTool.zip" -DestinationPath "C:\Program Files\Windows NT\Accessories" -Force			
+# Create Snipping Tool Start menu shortcut		
+$shell = New-Object -ComObject WScript.Shell		
+$shortcut = $shell.CreateShortcut("C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Accessories\Snipping Tool.lnk")		
+$shortcut.TargetPath = "C:\Program Files\Windows NT\Accessories\SnippingTool.exe"	
+$shortcut.Save()
 Clear-Host
 Write-Host "Restart to apply . . ."
 $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
 show-menu
 
       }
+    9 {
+
+Write-Host "Installing: Legacy Paint W10. Please wait . . ."
+# Ensure target directory exists
+New-Item -Path "C:\Program Files\Windows NT\Accessories" -ItemType Directory -Force | Out-Null	
+# Ensure Accessories folder exists
+New-Item -Path "C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Accessories" -ItemType Directory -Force | Out-Null		
+# classic Paint (mspaint) app taken from Windows 10 Build 14393
+Get-FileFromWeb -URL "https://github.com/ManueITest/Windows/raw/main/Classic%20Paint.zip" -File "$env:TEMP\ClassicPaint.zip"
+Expand-Archive -Path "$env:TEMP\ClassicPaint.zip" -DestinationPath "C:\Program Files\Windows NT\Accessories" -Force	
+# Create Paint Start menu shortcut  
+$shortcut = $shell.CreateShortcut("C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Accessories\Paint.lnk")
+$shortcut.TargetPath = "C:\Program Files\Windows NT\Accessories\mspaint1.exe"
+$shortcut.Save()
+
+	  }
+	  
     } } else { Write-Host "Invalid input. Please select a valid option (1-9)." } }
