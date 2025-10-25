@@ -74,7 +74,8 @@ New-Item -Path "$env:USERPROFILE\AppData\Roaming\Microsoft\Internet Explorer\Qui
 # CLEAN START MENU W11
 if ((Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion').CurrentBuild -ge 22000) {
 # Remove all pinned apps from Start https://github.com/Raphire/Win11Debloat/tree/refs/heads/master/Assets/Start				
-Get-Process StartMenuExperienceHost | Stop-Process -Force | Out-Null; Start-Sleep -Milliseconds 200		
+Get-Process StartMenuExperienceHost | Stop-Process -Force | Out-Null
+Start-Sleep -Milliseconds 200		
 $dst="$env:LOCALAPPDATA\Packages\Microsoft.Windows.StartMenuExperienceHost_cw5n1h2txyewy\LocalState\start2.bin"		
 if (!(Test-Path (Split-Path $dst))){New-Item -Path (Split-Path $dst) -ItemType Directory -Force}  		
 Invoke-WebRequest -Uri 'https://github.com/Raphire/Win11Debloat/raw/refs/heads/master/Assets/Start/start2.bin' -OutFile $dst -UseBasicParsing  		
@@ -120,23 +121,6 @@ Remove-Item -Recurse -Force "$env:SystemDrive\Windows\StartMenuLayout.xml" -Erro
 Clear-Host	
 }
 else{Write-Host $_.Exception.Message -ForegroundColor Red}
-# Signout Lockscreen
-# create new image
-Add-Type -AssemblyName System.Windows.Forms
-$screenWidth = [System.Windows.Forms.SystemInformation]::PrimaryMonitorSize.Width
-$screenHeight = [System.Windows.Forms.SystemInformation]::PrimaryMonitorSize.Height
-Add-Type -AssemblyName System.Drawing
-$file = "C:\Windows\Black.jpg"
-$edit = New-Object System.Drawing.Bitmap $screenWidth, $screenHeight
-$color = [System.Drawing.Brushes]::Black
-$graphics = [System.Drawing.Graphics]::FromImage($edit)
-$graphics.FillRectangle($color, 0, 0, $edit.Width, $edit.Height)
-$graphics.Dispose()
-$edit.Save($file)
-$edit.Dispose()
-# set image settings
-reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\PersonalizationCSP" /v "LockScreenImagePath" /t REG_SZ /d "C:\Windows\Black.jpg" /f | Out-Null
-reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\PersonalizationCSP" /v "LockScreenImageStatus" /t REG_DWORD /d "1" /f | Out-Null
 Write-Host "Uninstalling: UWP Apps. Please wait . . ."
 # uninstall all uwp apps keep nvidia & cbs
 # cbs needed for w11 explorer
@@ -177,9 +161,6 @@ Timeout /T 2 | Out-Null
 # install photo viewer
 'tif','tiff','bmp','dib','gif','jfif','jpe','jpeg','jpg','jxr','png','ico'|ForEach-Object{reg add "HKLM\SOFTWARE\Microsoft\Windows Photo Viewer\Capabilities\FileAssociations" /v ".${_}" /t REG_SZ /d "PhotoViewer.FileAssoc.Tiff" /f >$null 2>&1;reg add "HKCU\SOFTWARE\Classes\.${_}" /ve /t REG_SZ /d "PhotoViewer.FileAssoc.Tiff" /f >$null 2>&1}
 Timeout /T 2 | Out-Null
-# install notepad w11
-Get-AppXPackage -AllUsers *Microsoft.WindowsNotepad* | Foreach {Add-AppxPackage -DisableDevelopmentMode -Register -ErrorAction SilentlyContinue "$($_.InstallLocation)\AppXManifest.xml"}
-Timeout /T 2 | Out-Null
 Clear-Host
 Write-Host "Uninstalling: UWP Features. Please wait . . ."
 # uninstall all uwp features
@@ -211,6 +192,8 @@ Remove-WindowsCapability -Online -Name "WMIC~~~~" | Out-Null
 # breaks uwp snippingtool w10
 # Remove-WindowsCapability -Online -Name "Windows.Client.ShellComponents~~~~0.0.1.0" | Out-Null
 Remove-WindowsCapability -Online -Name "Windows.Kernel.LA57~~~~0.0.1.0" | Out-Null
+# remove character map
+Remove-Item "C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Accessories\System Tools\Character Map.lnk" -Force -ErrorAction SilentlyContinue | Out-Null
 Clear-Host
 Write-Host "Uninstalling: Legacy Features. Please wait . . ."
 # uninstall all legacy features
@@ -249,6 +232,9 @@ cmd /c "MsiExec.exe /X{B9A7A138-BFD5-4C73-A269-F78CCA28150E} /qn >nul 2>&1"
 cmd /c "MsiExec.exe /X{85C69797-7336-4E83-8D97-32A7C8465A3B} /qn >nul 2>&1"
 # (KB5001716)
 cmd /c "MsiExec.exe /X{B8D93870-98D1-4980-AFCA-E26563CDFB79} /qn >nul 2>&1"
+# uninstall microsoft gameinput
+cmd /c "MsiExec.exe /X{F563DC73-9550-F772-B4BF-2F72C83F9F30} /qn >nul 2>&1"
+cmd /c "MsiExec.exe /X{0812546C-471E-E343-DE9C-AECF3D0137E6} /qn >nul 2>&1"
 # stop onedrive running
 Stop-Process -Force -Name OneDrive -ErrorAction SilentlyContinue | Out-Null
 # uninstall onedrive w10
