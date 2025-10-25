@@ -141,22 +141,7 @@ $shortcut.Save()
 # restore new text document context menu item
 Invoke-WebRequest -Uri "https://github.com/vishnusai-karumuri/Registry-Fixes/raw/refs/heads/master/Restore_New_Text_Document_context_menu_item.reg" -OutFile "$env:TEMP\Restore_New_Text_Document_context_menu_item.reg"
 Start-Process regedit.exe -ArgumentList "/s `"$env:TEMP\Restore_New_Text_Document_context_menu_item.reg`"" -Wait	
-# add edit with notepad to right-click context menu
-# create reg file
-$MultilineComment = @'
-Windows Registry Editor Version 5.00
-
-[HKEY_CLASSES_ROOT\*\shell\Edit with &Notepad]
-"Icon"="C:\\Windows\\System32\\notepad.exe,0"
-
-[HKEY_CLASSES_ROOT\*\shell\Edit with &Notepad\command]
-@="C:\\Windows\\System32\\notepad.exe \"%1\""
-'@
-Set-Content -Path "$env:TEMP\Restore_New_Text_Document_context_menu_item.reg" -Value $MultilineComment -Force
-# import reg file
-Regedit.exe /S "$env:TEMP\Restore_New_Text_Document_context_menu_item.reg"
-}
-else{Write-Host $_.Exception.Message -ForegroundColor Red}
+}else{Write-Host $_.Exception.Message -ForegroundColor Red}
 Timeout /T 2 | Out-Null
 # install photo viewer
 'tif','tiff','bmp','dib','gif','jfif','jpe','jpeg','jpg','jxr','png','ico'|ForEach-Object{reg add "HKLM\SOFTWARE\Microsoft\Windows Photo Viewer\Capabilities\FileAssociations" /v ".${_}" /t REG_SZ /d "PhotoViewer.FileAssoc.Tiff" /f >$null 2>&1;reg add "HKCU\SOFTWARE\Classes\.${_}" /ve /t REG_SZ /d "PhotoViewer.FileAssoc.Tiff" /f >$null 2>&1}
