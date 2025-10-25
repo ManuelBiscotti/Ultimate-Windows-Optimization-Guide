@@ -490,6 +490,7 @@ show-menu
       }
     9 {
 
+Clear-Host
 Write-Host "Installing: Legacy Paint W10. Please wait . . ."
 # Ensure target directory exists
 New-Item -Path "C:\Program Files\Windows NT\Accessories" -ItemType Directory -Force | Out-Null	
@@ -502,6 +503,8 @@ Expand-Archive -Path "$env:TEMP\ClassicPaint.zip" -DestinationPath "C:\Program F
 $shortcut = $shell.CreateShortcut("C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Accessories\Paint.lnk")
 $shortcut.TargetPath = "C:\Program Files\Windows NT\Accessories\mspaint1.exe"
 $shortcut.Save()
+Write-Host "Restart to apply . . ."
+$null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
 show-menu
 
 	  }
