@@ -276,17 +276,10 @@ Regedit.exe /S "$env:TEMP\GamingServicesOn.reg"
 	Timeout /T 5 | Out-Null
 
 # Reinstall Gaming Service App
-Get-AppxPackage -AllUsers *Microsoft.GamingServices* | ForEach-Object {
-    Add-AppxPackage -Register "$($_.InstallLocation)\AppxManifest.xml" -DisableDevelopmentMode
+Get-AppxPackage -AllUsers *Microsoft.GamingServices* | ForEach-Object { 
+    Add-AppxPackage -Register "$($_.InstallLocation)\AppxManifest.xml" -ErrorAction SilentlyContinue 
 }
-
-# Re-add Gaming Services as provisioned (optional)
-Get-AppxProvisionedPackage -Online |
-    Where-Object { $_.DisplayName -like "*Microsoft.GamingServices*" } |
-    ForEach-Object { Add-AppxProvisionedPackage -Online -PackagePath $_.PackagePath -SkipLicense }
-
-# Open Microsoft Store Gaming Services page (manual install if needed)
-Start-Process "ms-windows-store://pdp/?productid=9MWPM2CQNLHN"
+if ($? -eq $false) { Start-Process "ms-windows-store://pdp/?productid=9MWPM2CQNLHN" }
 
 Clear-Host
 Write-Host "Restart to apply . . ."
