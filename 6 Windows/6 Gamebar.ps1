@@ -171,6 +171,9 @@ Windows Registry Editor Version 5.00
 
 [HKEY_LOCAL_MACHINE\SYSTEM\ControlSet001\Services\GamingServices]
 "Start"=dword:00000004
+
+[HKEY_LOCAL_MACHINE\SYSTEM\ControlSet001\Services\GameInputSvc]
+"Start"=dword:00000004
 '@
 	Set-Content -Path "$env:TEMP\GamingServicesOff.reg" -Value $MultilineComment -Force
 	# disable services RunAsTI
@@ -278,8 +281,8 @@ Windows Registry Editor Version 5.00
 [HKEY_LOCAL_MACHINE\SYSTEM\ControlSet001\Services\GamingServices]
 "Start"=dword:00000002
 
-[HKEY_LOCAL_MACHINE\SYSTEM\ControlSet001\Services\GameInputService]
-"Start"=dword:00000002
+[HKEY_LOCAL_MACHINE\SYSTEM\ControlSet001\Services\GameInputSvc]
+"Start"=dword:00000003
 '@
 	Set-Content -Path "$env:TEMP\GamingServicesOn.reg" -Value $MultilineComment -Force
 	# enable services RunAsTI
