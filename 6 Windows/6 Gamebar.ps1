@@ -192,8 +192,10 @@ exit
       }
     2 {
 
-Clear-Host
-$progresspreference = 'silentlycontinue'
+	Clear-Host
+	$ProgressPreference = 'SilentlyContinue'  
+	$ErrorActionPreference = 'SilentlyContinue'
+	
 # gamebar regedit
 reg add "HKCU\System\GameConfigStore" /v "GameDVR_Enabled" /t REG_DWORD /d "1" /f | Out-Null
 reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\GameDVR" /v "AppCaptureEnabled" /t REG_DWORD /d "1" /f | Out-Null
@@ -249,20 +251,34 @@ Clear-Host
 Get-FileFromWeb -URL "https://aka.ms/GamingRepairTool" -File "$env:TEMP\GamingRepairTool.exe"
 # start gamebar repair too
 Start-Process -wait "$env:TEMP\GamingRepairTool.exe"
+Clear-Host
 
-# Register GameInput related MSI
-# msiexec /fa {0812546E-471E-E343-DE9C-AECF3D0137E6} /qn /norestart
+# GameInput
+Write-Host "Installing: GameInput. Please Wait . . ."
+if (-not (Get-Command "winget.exe" -ErrorAction SilentlyContinue)) {
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+Start-Process powershell -ArgumentList "-NoProfile -Command Invoke-Expression ((New-Object Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))" -Wait
+choco.exe install winget -y --force --ignore-checksums --quiet | Out-Null
+} else {
+}
+winget.exe install --id "Microsoft.GameInput" --exact --source winget --accept-source-agreements --disable-interactivity --silent --accept-package-agreements --force
+Clear-Host
 
-# Re-enable Gaming Services
+# Gaming Services
+Write-Host "Gaming Services: On . . ."
 # Set service startup types back to Automatic
 	$MultilineComment = @'
 Windows Registry Editor Version 5.00
 
-; Disable Gaming Services
+; Enable Gaming Services
+
 [HKEY_LOCAL_MACHINE\SYSTEM\ControlSet001\Services\GamingServicesNet]
 "Start"=dword:00000002
 
 [HKEY_LOCAL_MACHINE\SYSTEM\ControlSet001\Services\GamingServices]
+"Start"=dword:00000002
+
+[HKEY_LOCAL_MACHINE\SYSTEM\ControlSet001\Services\GameInputService]
 "Start"=dword:00000002
 '@
 	Set-Content -Path "$env:TEMP\GamingServicesOn.reg" -Value $MultilineComment -Force
@@ -272,12 +288,11 @@ Regedit.exe /S "$env:TEMP\GamingServicesOn.reg"
 '@
 	RunAsTI powershell "-nologo -windowstyle hidden -command $GamingServicesOn"
 	Timeout /T 5 | Out-Null
+	Clear-Host
 
-# Reinstall Gaming Service App
-Get-AppxPackage -AllUsers *Microsoft.GamingServices* | ForEach-Object { 
-    Add-AppxPackage -Register "$($_.InstallLocation)\AppxManifest.xml" -ErrorAction SilentlyContinue 
-}
-if ($? -eq $false) { Start-Process "ms-windows-store://pdp/?productid=9MWPM2CQNLHN" }
+# Gaming Service App
+Get-AppXPackage -AllUsers *Microsoft.GamingServices* | Foreach {Add-AppxPackage -DisableDevelopmentMode -Register -ErrorAction SilentlyContinue "$($_.InstallLocation)\AppXManifest.xml"}
+Start-Process "ms-windows-store://pdp/?productid=9MWPM2CQNLHN"
 
 Clear-Host
 Write-Host "Restart to apply . . ."
