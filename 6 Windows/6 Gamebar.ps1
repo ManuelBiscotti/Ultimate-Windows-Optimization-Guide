@@ -251,9 +251,7 @@ Get-FileFromWeb -URL "https://aka.ms/GamingRepairTool" -File "$env:TEMP\GamingRe
 Start-Process -wait "$env:TEMP\GamingRepairTool.exe"
 
 # Register GameInput related MSI
-msiexec /fa {F563DC73-9550-F772-B4BF-2F72C83F9F30} /qn /norestart
-msiexec /fa {0812546E-471E-E343-DE9C-AECF3D0137E6} /qn /norestart
-msiexec /fa {0812546C-471E-E343-DE9C-AECF3D0137E6} /qn /norestart
+# msiexec /fa {0812546E-471E-E343-DE9C-AECF3D0137E6} /qn /norestart
 
 # Re-enable Gaming Services
 # Set service startup types back to Automatic
