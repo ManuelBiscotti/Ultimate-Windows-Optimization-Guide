@@ -188,7 +188,7 @@ Regedit.exe /S "$env:TEMP\GamingServicesOff.reg"
 Write-Host "Restart to apply . . ."
 $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
 Start-Process ms-settings:gaming-gamebar
-
+exit
       }
     2 {
 
@@ -251,6 +251,8 @@ Get-FileFromWeb -URL "https://aka.ms/GamingRepairTool" -File "$env:TEMP\GamingRe
 Start-Process -wait "$env:TEMP\GamingRepairTool.exe"
 
 # Register GameInput related MSI
+msiexec /fa {F563DC73-9550-F772-B4BF-2F72C83F9F30} /qn /norestart
+msiexec /fa {0812546E-471E-E343-DE9C-AECF3D0137E6} /qn /norestart
 msiexec /fa {0812546C-471E-E343-DE9C-AECF3D0137E6} /qn /norestart
 
 # Re-enable Gaming Services
@@ -274,15 +276,22 @@ Regedit.exe /S "$env:TEMP\GamingServicesOn.reg"
 	Timeout /T 5 | Out-Null
 
 # Reinstall Gaming Service App
-Get-AppxPackage -AllUsers *Microsoft.GamingServices* | ForEach-Object { 
-    Add-AppxPackage -Register "$($_.InstallLocation)\AppxManifest.xml" -ErrorAction SilentlyContinue 
+Get-AppxPackage -AllUsers *Microsoft.GamingServices* | ForEach-Object {
+    Add-AppxPackage -Register "$($_.InstallLocation)\AppxManifest.xml" -DisableDevelopmentMode
 }
+
+# Re-add Gaming Services as provisioned (optional)
+Get-AppxProvisionedPackage -Online |
+    Where-Object { $_.DisplayName -like "*Microsoft.GamingServices*" } |
+    ForEach-Object { Add-AppxProvisionedPackage -Online -PackagePath $_.PackagePath -SkipLicense }
+
+# Open Microsoft Store Gaming Services page (manual install if needed)
 Start-Process "ms-windows-store://pdp/?productid=9MWPM2CQNLHN"
 
 Clear-Host
 Write-Host "Restart to apply . . ."
 $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
 Start-Process ms-settings:gaming-gamebar
-
+exit
       }
     } } else { Write-Host "Invalid input. Please select a valid option (1-2)." } }
