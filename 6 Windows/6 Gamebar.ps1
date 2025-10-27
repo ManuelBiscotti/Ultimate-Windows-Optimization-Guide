@@ -252,9 +252,9 @@ Start-Process -wait "$env:TEMP\EdgeWebView.exe"
 Clear-Host
 # download gamebar repair tool
 Get-FileFromWeb -URL "https://aka.ms/GamingRepairTool" -File "$env:TEMP\GamingRepairTool.exe"
+Clear-Host
 # start gamebar repair too
 Start-Process -wait "$env:TEMP\GamingRepairTool.exe"
-Clear-Host
 
 # GameInput
 Write-Host "Installing: GameInput. Please Wait . . ."
@@ -262,9 +262,10 @@ if (-not (Get-Command "winget.exe" -ErrorAction SilentlyContinue)) {
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 Invoke-Expression ((New-Object Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1')) | Out-Null
 choco.exe install winget -y --force --ignore-checksums --quiet | Out-Null
+Clear-Host
 } else {
 }
-winget.exe install --id "Microsoft.GameInput" --exact --source winget --accept-source-agreements --disable-interactivity --silent --accept-package-agreements --force | Out-Null
+winget.exe install --id "Microsoft.GameInput" --exact --source winget --accept-source-agreements --disable-interactivity --silent --no-progress --accept-package-agreements --force | Out-Null
 Clear-Host
 
 # Gaming Services
@@ -291,7 +292,6 @@ Regedit.exe /S "$env:TEMP\GamingServicesOn.reg"
 '@
 	RunAsTI powershell "-nologo -windowstyle hidden -command $GamingServicesOn"
 	Timeout /T 5 | Out-Null
-	Clear-Host
 
 # Gaming Service App
 Get-AppXPackage -AllUsers *Microsoft.GamingServices* | Foreach {Add-AppxPackage -DisableDevelopmentMode -Register -ErrorAction SilentlyContinue "$($_.InstallLocation)\AppXManifest.xml"}
