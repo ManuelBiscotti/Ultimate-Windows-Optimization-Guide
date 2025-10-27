@@ -257,11 +257,11 @@ Clear-Host
 Write-Host "Installing: GameInput. Please Wait . . ."
 if (-not (Get-Command "winget.exe" -ErrorAction SilentlyContinue)) {
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-Start-Process powershell -ArgumentList "-NoProfile -Command Invoke-Expression ((New-Object Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))" -Wait
+Invoke-Expression ((New-Object Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1')) | Out-Null
 choco.exe install winget -y --force --ignore-checksums --quiet | Out-Null
 } else {
 }
-winget.exe install --id "Microsoft.GameInput" --exact --source winget --accept-source-agreements --disable-interactivity --silent --accept-package-agreements --force
+winget.exe install --id "Microsoft.GameInput" --exact --source winget --accept-source-agreements --disable-interactivity --silent --accept-package-agreements --force | Out-Null
 Clear-Host
 
 # Gaming Services
