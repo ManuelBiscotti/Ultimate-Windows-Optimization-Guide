@@ -187,10 +187,10 @@ Regedit.exe /S "$env:TEMP\GamingServicesOff.reg"
 	Write-Output "Removing Gaming Services . . ."
 	Get-AppxPackage -allusers *Microsoft.GamingServices* | Remove-AppxPackage
 
+	Start-Process ms-settings:gaming-gamebar
 
 Write-Host "Restart to apply . . ."
 $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
-Start-Process ms-settings:gaming-gamebar
 exit
       }
     2 {
@@ -297,10 +297,10 @@ Regedit.exe /S "$env:TEMP\GamingServicesOn.reg"
 Get-AppXPackage -AllUsers *Microsoft.GamingServices* | Foreach {Add-AppxPackage -DisableDevelopmentMode -Register -ErrorAction SilentlyContinue "$($_.InstallLocation)\AppXManifest.xml"}
 Start-Process "ms-windows-store://pdp/?productid=9MWPM2CQNLHN"
 
+Start-Process ms-settings:gaming-gamebar
 Clear-Host
 Write-Host "Restart to apply . . ."
 $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
-Start-Process ms-settings:gaming-gamebar
 exit
       }
     } } else { Write-Host "Invalid input. Please select a valid option (1-2)." } }
