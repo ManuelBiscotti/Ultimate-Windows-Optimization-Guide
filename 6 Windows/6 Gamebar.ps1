@@ -252,9 +252,9 @@ Start-Process -wait "$env:TEMP\GamingRepairTool.exe"
 
 # Register GameInput related MSI
 msiexec /fa {F563DC73-9550-F772-B4BF-2F72C83F9F30} /qn /norestart
-msiexec /fa {0812546C-471E-E343-DE9C-AECF3D0137E6} /qn /norestart
+msiexec /fa {0812546E-471E-E343-DE9C-AECF3D0137E6} /qn /norestart
 
-# Re-enable Gaming Services and GameInput
+# Re-enable Gaming Services
 # Set service startup types back to Automatic
 	$MultilineComment = @'
 Windows Registry Editor Version 5.00
@@ -267,7 +267,7 @@ Windows Registry Editor Version 5.00
 "Start"=dword:00000002
 '@
 	Set-Content -Path "$env:TEMP\GamingServicesOn.reg" -Value $MultilineComment -Force
-	# disable services RunAsTI
+	# enable services RunAsTI
 	$GamingServicesOn = @'
 Regedit.exe /S "$env:TEMP\GamingServicesOn.reg"
 '@
@@ -278,7 +278,7 @@ Regedit.exe /S "$env:TEMP\GamingServicesOn.reg"
 Get-AppxPackage -AllUsers *Microsoft.GamingServices* | ForEach-Object { 
     Add-AppxPackage -Register "$($_.InstallLocation)\AppxManifest.xml" -ErrorAction SilentlyContinue 
 }
-if ($? -eq $false) { Start-Process "ms-windows-store://pdp/?productid=9MWPM2CQNLHN" }
+Start-Process "ms-windows-store://pdp/?productid=9MWPM2CQNLHN"
 
 Clear-Host
 Write-Host "Restart to apply . . ."
