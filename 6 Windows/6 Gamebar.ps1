@@ -244,12 +244,18 @@ Get-AppXPackage -AllUsers *Microsoft.XboxSpeechToTextOverlay* | Foreach {Add-App
 Get-AppXPackage -AllUsers *Microsoft.WindowsStore* | Foreach {Add-AppxPackage -DisableDevelopmentMode -Register -ErrorAction SilentlyContinue "$($_.InstallLocation)\AppXManifest.xml"}
 Get-AppXPackage -AllUsers *Microsoft.Microsoft.StorePurchaseApp * | Foreach {Add-AppxPackage -DisableDevelopmentMode -Register -ErrorAction SilentlyContinue "$($_.InstallLocation)\AppXManifest.xml"}
 Write-Host "Installing: Edge Webview . . ."
+
+# FIX XBOX SIGN IN
+# enable UAC
+New-Item -Path "Registry::HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" -ErrorAction SilentlyContinue | Out-Null
+New-ItemProperty -Path "Registry::HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" -Name "EnableLUA" -value "1" -PropertyType Dword -ErrorAction SilentlyContinue | Out-Null
+Set-ItemProperty -Path "Registry::HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" -Name "EnableLUA" -value "1" -ErrorAction SilentlyContinue | Out-Null
 # download edge webview installer
 Get-FileFromWeb -URL "https://msedge.sf.dl.delivery.mp.microsoft.com/filestreamingservice/files/304fddef-b073-4e0a-b1ff-c2ea02584017/MicrosoftEdgeWebview2Setup.exe" -File "$env:TEMP\EdgeWebView.exe"
 Clear-Host
 # start edge webview installer
 Start-Process -wait "$env:TEMP\EdgeWebView.exe"
-Clear-Host
+
 # download gamebar repair tool
 Get-FileFromWeb -URL "https://aka.ms/GamingRepairTool" -File "$env:TEMP\GamingRepairTool.exe"
 Clear-Host
@@ -295,8 +301,8 @@ Regedit.exe /S "$env:TEMP\GamingServicesOn.reg"
 
 # Gaming Service App
 Get-AppXPackage -AllUsers *Microsoft.GamingServices* | Foreach {Add-AppxPackage -DisableDevelopmentMode -Register -ErrorAction SilentlyContinue "$($_.InstallLocation)\AppXManifest.xml"}
-Start-Process "ms-windows-store://pdp/?productid=9MWPM2CQNLHN"
 
+Start-Process "ms-windows-store://pdp/?productid=9MWPM2CQNLHN"
 Start-Process ms-settings:gaming-gamebar
 Clear-Host
 Write-Host "Restart to apply . . ."
