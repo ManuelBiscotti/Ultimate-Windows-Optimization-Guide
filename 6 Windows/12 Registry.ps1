@@ -9,6 +9,9 @@ $Host.PrivateData.ProgressBackgroundColor = "Black"
 $Host.PrivateData.ProgressForegroundColor = "White"
 Clear-Host
 
+$ProgressPreference = 'SilentlyContinue'  
+$ErrorActionPreference = 'SilentlyContinue'
+
 Write-Host "1. Registry: Optimize (Recommended)"
 Write-Host "2. Registry: Default"
 while ($true) {
