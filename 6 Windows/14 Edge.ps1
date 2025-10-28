@@ -12,7 +12,7 @@ Clear-Host
 $ProgressPreference = 'SilentlyContinue'  
 $ErrorActionPreference = 'SilentlyContinue'
 
-    function Get-FileFromWeb {
+function Get-FileFromWeb {
     param ([Parameter(Mandatory)][string]$URL, [Parameter(Mandatory)][string]$File)
     function Show-Progress {
     param ([Parameter(Mandatory)][Single]$TotalValue, [Parameter(Mandatory)][Single]$CurrentValue, [Parameter(Mandatory)][string]$ProgressText, [Parameter()][int]$BarSize = 10, [Parameter()][switch]$Complete)
@@ -44,7 +44,7 @@ $ErrorActionPreference = 'SilentlyContinue'
     $reader.Close()
     $writer.Close()
     }
-    }
+}
 
 Write-Host "1. Edge: Off (Recommended)"
 Write-Host "2. Edge: Default"
@@ -52,195 +52,189 @@ while ($true) {
 $choice = Read-Host " "
 if ($choice -match '^[1-2]$') {
     switch ($choice) {
-        1 {
+		1 {
+			
+			Clear-Host
+			Write-Host "Uninstalling: Edge . . ."
+			# stop edge running
+			$stop = "MicrosoftEdgeUpdate", "OneDrive", "WidgetService", "Widgets", "msedge", "Resume", "CrossDeviceResume", "msedgewebview2"
+			$stop | ForEach-Object { Stop-Process -Name $_ -Force -ErrorAction SilentlyContinue }
 
-Clear-Host
-Write-Host "Uninstalling: Edge . . ."
-# stop edge running
-$stop = "MicrosoftEdgeUpdate", "OneDrive", "WidgetService", "Widgets", "msedge", "Resume", "CrossDeviceResume", "msedgewebview2"
-$stop | ForEach-Object { Stop-Process -Name $_ -Force -ErrorAction SilentlyContinue }
-
-	<#
-		.SYNOPSIS
-		Uninstalls or reinstalls Microsoft Edge and its related components. Made by @he3als.
-	
-		.Description
-		Uninstalls or reinstalls Microsoft Edge and its related components in a non-forceful manner, based upon switches or user choices in a TUI.
-	
-		.PARAMETER UninstallEdge
-		Uninstalls Edge, leaving the Edge user data.
-	
-		.PARAMETER InstallEdge
-		Installs Edge, leaving the previous Edge user data.
-	
-		.PARAMETER InstallWebView
-		Installs Edge WebView2 using the Evergreen installer.
-	
-		.PARAMETER RemoveEdgeData
-		Removes all Edge user data. Compatible with -InstallEdge.
-	
-		.PARAMETER KeepAppX
-		Doesn't check for and remove the AppX, in case you want to use alternative AppX removal methods. Doesn't work with UninstallEdge.
-	
-		.PARAMETER NonInteractive
-		When combined with other parameters, this does not prompt the user for anything.
-	
-		.LINK
-		https://github.com/he3als/EdgeRemover
-	#>
-	
-	# Windows 10
-	if ((Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion').CurrentBuild -le 19045) {
+			<#
+				.SYNOPSIS
+				Uninstalls or reinstalls Microsoft Edge and its related components. Made by @he3als.
+			
+				.Description
+				Uninstalls or reinstalls Microsoft Edge and its related components in a non-forceful manner, based upon switches or user choices in a TUI.
+			
+				.PARAMETER UninstallEdge
+				Uninstalls Edge, leaving the Edge user data.
+			
+				.PARAMETER InstallEdge
+				Installs Edge, leaving the previous Edge user data.
+			
+				.PARAMETER InstallWebView
+				Installs Edge WebView2 using the Evergreen installer.
+			
+				.PARAMETER RemoveEdgeData
+				Removes all Edge user data. Compatible with -InstallEdge.
+			
+				.PARAMETER KeepAppX
+				Doesn't check for and remove the AppX, in case you want to use alternative AppX removal methods. Doesn't work with UninstallEdge.
+			
+				.PARAMETER NonInteractive
+				When combined with other parameters, this does not prompt the user for anything.
+			
+				.LINK
+				https://github.com/he3als/EdgeRemover
+			#>
+			
+			# Windows 10
+			if ((Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion').CurrentBuild -le 19045) {
+				
+				Invoke-WebRequest `
+		    		-Uri "https://cdn.jsdelivr.net/gh/he3als/EdgeRemover@main/get.ps1" `
+		    		-OutFile ([System.IO.Path]::Combine($env:TEMP, 'EdgeRemover.ps1')) `
+		    		-UseBasicParsing
 		
-		Invoke-WebRequest `
-    		-Uri "https://cdn.jsdelivr.net/gh/he3als/EdgeRemover@main/get.ps1" `
-    		-OutFile ([System.IO.Path]::Combine($env:TEMP, 'EdgeRemover.ps1')) `
-    		-UseBasicParsing
-
-		Start-Process -FilePath "powershell.exe" `
-    		-ArgumentList (
-				'-NoProfile','-ExecutionPolicy', 'Bypass',
-                '-File', [System.IO.Path]::Combine($env:TEMP, 'EdgeRemover.ps1'),
-                '-UninstallEdge', '-RemoveEdgeData', '-NonInteractive'
-			) `
-    		-Wait
-
-	}
-
-	<#
-
-		.SYNOPSIS
-		Uninstall Microsoft Edge 
+				Start-Process -FilePath "powershell.exe" `
+		    		-ArgumentList (
+						'-NoProfile','-ExecutionPolicy', 'Bypass',
+		                '-File', [System.IO.Path]::Combine($env:TEMP, 'EdgeRemover.ps1'),
+		                '-UninstallEdge', '-RemoveEdgeData', '-NonInteractive'
+					) `
+		    		-Wait
 		
-		.DESCRIPTION
-		Microsoft Edge will be completely uninstalled. The Microsoft Edge Update service might remain, this is normal as it is required for updating WebView2.
-
-		.LINK
-		https://gist.github.com/ave9858/c3451d9f452389ac7607c99d45edecc6
-
-	#>
-
-	# Windows 11
-	elseif ((Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion').CurrentBuild -ge 22000) {
+			}
 		
-		Invoke-RestMethod "https://gist.github.com/ave9858/c3451d9f452389ac7607c99d45edecc6/raw/UninstallEdge.ps1" |
-		ForEach-Object {$_ -replace '\$ErrorActionPreference = "Stop"', '$ErrorActionPreference = "SilentlyContinue"'} |
-		Set-Content -Path ([System.IO.Path]::Combine($env:TEMP, 'UninstallEdge.ps1')) -Encoding UTF8
-		Start-Process -FilePath "PowerShell.exe" `
-    		-ArgumentList ('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', [System.IO.Path]::Combine($env:TEMP, 'UninstallEdge.ps1')) `
-		-Wait
-	}
-	else{
-    	Write-Host $_.Exception.Message -ForegroundColor Red
-	}
-
-<#
-# find edgeupdate.exe
-$edgeupdate = @(); "LocalApplicationData", "ProgramFilesX86", "ProgramFiles" | ForEach-Object {
-$folder = [Environment]::GetFolderPath($_)
-$edgeupdate += Get-ChildItem "$folder\Microsoft\EdgeUpdate\*.*.*.*\MicrosoftEdgeUpdate.exe" -rec -ea 0
+			<#
+		
+				.SYNOPSIS
+				Uninstall Microsoft Edge 
+				
+				.DESCRIPTION
+				Microsoft Edge will be completely uninstalled. The Microsoft Edge Update service might remain, this is normal as it is required for updating WebView2.
+		
+				.LINK
+				https://gist.github.com/ave9858/c3451d9f452389ac7607c99d45edecc6
+		
+			#>
+		
+			# Windows 11
+			elseif ((Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion').CurrentBuild -ge 22000) {
+				
+				Invoke-RestMethod "https://gist.github.com/ave9858/c3451d9f452389ac7607c99d45edecc6/raw/UninstallEdge.ps1" |
+				ForEach-Object {$_ -replace '\$ErrorActionPreference = "Stop"', '$ErrorActionPreference = "SilentlyContinue"'} |
+				Set-Content -Path ([System.IO.Path]::Combine($env:TEMP, 'UninstallEdge.ps1')) -Encoding UTF8
+				Start-Process -FilePath "PowerShell.exe" `
+		    		-ArgumentList ('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', [System.IO.Path]::Combine($env:TEMP, 'UninstallEdge.ps1')) `
+				-Wait
+			}
+			else{
+		    	Write-Host $_.Exception.Message -ForegroundColor Red
+			}
+		
+			<#
+			# find edgeupdate.exe
+			$edgeupdate = @(); "LocalApplicationData", "ProgramFilesX86", "ProgramFiles" | ForEach-Object {
+			$folder = [Environment]::GetFolderPath($_)
+			$edgeupdate += Get-ChildItem "$folder\Microsoft\EdgeUpdate\*.*.*.*\MicrosoftEdgeUpdate.exe" -rec -ea 0
+			}
+			# find edgeupdate & allow uninstall regedit
+			$global:REG = "HKCU:\SOFTWARE", "HKLM:\SOFTWARE", "HKCU:\SOFTWARE\Policies", "HKLM:\SOFTWARE\Policies", "HKCU:\SOFTWARE\WOW6432Node", "HKLM:\SOFTWARE\WOW6432Node", "HKCU:\SOFTWARE\WOW6432Node\Policies", "HKLM:\SOFTWARE\WOW6432Node\Policies"
+			foreach ($location in $REG) { Remove-Item "$location\Microsoft\EdgeUpdate" -recurse -force -ErrorAction SilentlyContinue }
+			# uninstall edgeupdate
+			foreach ($path in $edgeupdate) {
+			if (Test-Path $path) { Start-Process -Wait $path -Args "/unregsvc" | Out-Null }
+			do { Start-Sleep 3 } while ((Get-Process -Name "setup", "MicrosoftEdge*" -ErrorAction SilentlyContinue).Path -like "*\Microsoft\Edge*")
+			if (Test-Path $path) { Start-Process -Wait $path -Args "/uninstall" | Out-Null }
+			do { Start-Sleep 3 } while ((Get-Process -Name "setup", "MicrosoftEdge*" -ErrorAction SilentlyContinue).Path -like "*\Microsoft\Edge*")
+			}
+			# remove edgewebview regedit
+			cmd /c "reg delete `"HKLM\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\Microsoft EdgeWebView`" /f >nul 2>&1"
+			cmd /c "reg delete `"HKCU\Software\Microsoft\Windows\CurrentVersion\Uninstall\Microsoft EdgeWebView`" /f >nul 2>&1"
+			# remove folders edge edgecore edgeupdate edgewebview temp
+			Remove-Item -Recurse -Force "$env:SystemDrive\Program Files (x86)\Microsoft" -ErrorAction SilentlyContinue | Out-Null
+			# remove edge shortcuts
+			Remove-Item -Recurse -Force "$env:SystemDrive\Windows\System32\config\systemprofile\AppData\Roaming\Microsoft\Internet Explorer\Quick Launch\Microsoft Edge.lnk" -ErrorAction SilentlyContinue | Out-Null
+			Remove-Item -Recurse -Force "$env:USERPROFILE\AppData\Roaming\Microsoft\Internet Explorer\Quick Launch\Microsoft Edge.lnk" -ErrorAction SilentlyContinue | Out-Null
+			Remove-Item -Recurse -Force "$env:USERPROFILE\AppData\Roaming\Microsoft\Internet Explorer\Quick Launch\User Pinned\TaskBar\Microsoft Edge.lnk" -ErrorAction SilentlyContinue | Out-Null
+			Remove-Item -Recurse -Force "$env:USERPROFILE\AppData\Roaming\Microsoft\Internet Explorer\Quick Launch\User Pinned\TaskBar\Tombstones\Microsoft Edge.lnk" -ErrorAction SilentlyContinue | Out-Null
+			Remove-Item -Recurse -Force "$env:ProgramData\Microsoft\Windows\Start Menu\Programs\Microsoft Edge.lnk" -ErrorAction SilentlyContinue | Out-Null
+			Remove-Item -Recurse -Force "$env:SystemDrive\Users\Public\Desktop\Microsoft Edge.lnk" -ErrorAction SilentlyContinue | Out-Null
+			# stop edge running
+			$stop = "MicrosoftEdgeUpdate", "OneDrive", "WidgetService", "Widgets", "msedge", "Resume", "CrossDeviceResume", "msedgewebview2"
+			$stop | ForEach-Object { Stop-Process -Name $_ -Force -ErrorAction SilentlyContinue }
+			# uninstall uwp edge & bing apps
+			Get-AppxPackage -allusers *Microsoft.MicrosoftEdge.Stable* | Remove-AppxPackage
+			Get-AppxPackage -allusers *Microsoft.BingNews* | Remove-AppxPackage
+			Get-AppxPackage -allusers *Microsoft.BingSearch* | Remove-AppxPackage
+			Get-AppxPackage -allusers *Microsoft.BingWeather* | Remove-AppxPackage
+			#>
+			Clear-Host
+			Write-Host "Restart to apply . . ."
+			$null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+			exit
+			
+		}
+		2 {
+			
+			Clear-Host
+		    Write-Host "Installing & Updating: Edge . . ."
+		    # stop edge running
+		    $stop = "MicrosoftEdgeUpdate", "OneDrive", "WidgetService", "Widgets", "msedge", "Resume", "CrossDeviceResume", "msedgewebview2"
+		    $stop | ForEach-Object { Stop-Process -Name $_ -Force -ErrorAction SilentlyContinue }
+		    # enable edge updates regedit
+		    cmd /c "reg delete `"HKLM\SOFTWARE\Microsoft\EdgeUpdate`" /f >nul 2>&1"
+		    # remove allow edge uninstall regedit
+		    # cmd /c "reg delete `"HKLM\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdateDev`" /f >nul 2>&1"
+		    # download edge installer
+		    Get-FileFromWeb -URL "https://go.microsoft.com/fwlink/?linkid=2109047&Channel=Stable&language=en&brand=M100" -File "$env:TEMP\Edge.exe"
+		    # start edge installer
+		    Start-Process -wait "$env:TEMP\Edge.exe"
+		    # stop edge running
+		    $stop = "MicrosoftEdgeUpdate", "OneDrive", "WidgetService", "Widgets", "msedge", "Resume", "CrossDeviceResume", "msedgewebview2"
+		    $stop | ForEach-Object { Stop-Process -Name $_ -Force -ErrorAction SilentlyContinue }
+		    # download edge webview installer
+		    Get-FileFromWeb -URL "https://msedge.sf.dl.delivery.mp.microsoft.com/filestreamingservice/files/304fddef-b073-4e0a-b1ff-c2ea02584017/MicrosoftEdgeWebview2Setup.exe" -File "$env:TEMP\EdgeWebView.exe"
+		    # start edge webview installer
+		    Start-Process -wait "$env:TEMP\EdgeWebView.exe"
+		    # stop edge running
+		    $stop = "MicrosoftEdgeUpdate", "OneDrive", "WidgetService", "Widgets", "msedge", "msedgewebview2"
+		    $stop | ForEach-Object { Stop-Process -Name $_ -Force -ErrorAction SilentlyContinue }
+		    # add edge shortcuts
+		    $WshShell = New-Object -comObject WScript.Shell
+		    $Shortcut = $WshShell.CreateShortcut("$env:SystemDrive\Windows\System32\config\systemprofile\AppData\Roaming\Microsoft\Internet Explorer\Quick Launch\Microsoft Edge.lnk")
+		    $Shortcut.TargetPath = "$env:SystemDrive\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
+		    $Shortcut.Save()
+		    $WshShell = New-Object -comObject WScript.Shell
+		    $Shortcut = $WshShell.CreateShortcut("$env:USERPROFILE\AppData\Roaming\Microsoft\Internet Explorer\Quick Launch\Microsoft Edge.lnk")
+		    $Shortcut.TargetPath = "$env:SystemDrive\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
+		    $Shortcut.Save()
+		    $WshShell = New-Object -comObject WScript.Shell
+		    $Shortcut = $WshShell.CreateShortcut("$env:USERPROFILE\AppData\Roaming\Microsoft\Internet Explorer\Quick Launch\User Pinned\TaskBar\Microsoft Edge.lnk")
+		    $Shortcut.TargetPath = "$env:SystemDrive\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
+		    $Shortcut.Save()
+		    $WshShell = New-Object -comObject WScript.Shell
+		    $Shortcut = $WshShell.CreateShortcut("$env:USERPROFILE\AppData\Roaming\Microsoft\Internet Explorer\Quick Launch\User Pinned\TaskBar\Tombstones\Microsoft Edge.lnk")
+		    $Shortcut.TargetPath = "$env:SystemDrive\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
+		    $Shortcut.Save()
+		    $WshShell = New-Object -comObject WScript.Shell
+		    $Shortcut = $WshShell.CreateShortcut("$env:ProgramData\Microsoft\Windows\Start Menu\Programs\Microsoft Edge.lnk")
+		    $Shortcut.TargetPath = "$env:SystemDrive\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
+		    $Shortcut.Save()
+		    $WshShell = New-Object -comObject WScript.Shell
+		    $Shortcut = $WshShell.CreateShortcut("$env:SystemDrive\Users\Public\Desktop\Microsoft Edge.lnk")
+		    $Shortcut.TargetPath = "$env:SystemDrive\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
+		    $Shortcut.Save()
+		    Clear-Host
+		    Write-Host "Restart to apply . . ."
+		    $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+		    # open ublock origin in web browser
+		    Start-Process "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe" "https://microsoftedge.microsoft.com/addons/detail/ublock-origin/odfafepnkmbhccpbejgmiehpchacaeak"
+		    exit
+			
+		}
+    } 
+	} else { Write-Host "Invalid input. Please select a valid option (1-2)." } 
 }
-# find edgeupdate & allow uninstall regedit
-$global:REG = "HKCU:\SOFTWARE", "HKLM:\SOFTWARE", "HKCU:\SOFTWARE\Policies", "HKLM:\SOFTWARE\Policies", "HKCU:\SOFTWARE\WOW6432Node", "HKLM:\SOFTWARE\WOW6432Node", "HKCU:\SOFTWARE\WOW6432Node\Policies", "HKLM:\SOFTWARE\WOW6432Node\Policies"
-foreach ($location in $REG) { Remove-Item "$location\Microsoft\EdgeUpdate" -recurse -force -ErrorAction SilentlyContinue }
-# uninstall edgeupdate
-foreach ($path in $edgeupdate) {
-if (Test-Path $path) { Start-Process -Wait $path -Args "/unregsvc" | Out-Null }
-do { Start-Sleep 3 } while ((Get-Process -Name "setup", "MicrosoftEdge*" -ErrorAction SilentlyContinue).Path -like "*\Microsoft\Edge*")
-if (Test-Path $path) { Start-Process -Wait $path -Args "/uninstall" | Out-Null }
-do { Start-Sleep 3 } while ((Get-Process -Name "setup", "MicrosoftEdge*" -ErrorAction SilentlyContinue).Path -like "*\Microsoft\Edge*")
-}
-# remove edgewebview regedit
-cmd /c "reg delete `"HKLM\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\Microsoft EdgeWebView`" /f >nul 2>&1"
-cmd /c "reg delete `"HKCU\Software\Microsoft\Windows\CurrentVersion\Uninstall\Microsoft EdgeWebView`" /f >nul 2>&1"
-# remove folders edge edgecore edgeupdate edgewebview temp
-Remove-Item -Recurse -Force "$env:SystemDrive\Program Files (x86)\Microsoft" -ErrorAction SilentlyContinue | Out-Null
-# remove edge shortcuts
-Remove-Item -Recurse -Force "$env:SystemDrive\Windows\System32\config\systemprofile\AppData\Roaming\Microsoft\Internet Explorer\Quick Launch\Microsoft Edge.lnk" -ErrorAction SilentlyContinue | Out-Null
-Remove-Item -Recurse -Force "$env:USERPROFILE\AppData\Roaming\Microsoft\Internet Explorer\Quick Launch\Microsoft Edge.lnk" -ErrorAction SilentlyContinue | Out-Null
-Remove-Item -Recurse -Force "$env:USERPROFILE\AppData\Roaming\Microsoft\Internet Explorer\Quick Launch\User Pinned\TaskBar\Microsoft Edge.lnk" -ErrorAction SilentlyContinue | Out-Null
-Remove-Item -Recurse -Force "$env:USERPROFILE\AppData\Roaming\Microsoft\Internet Explorer\Quick Launch\User Pinned\TaskBar\Tombstones\Microsoft Edge.lnk" -ErrorAction SilentlyContinue | Out-Null
-Remove-Item -Recurse -Force "$env:ProgramData\Microsoft\Windows\Start Menu\Programs\Microsoft Edge.lnk" -ErrorAction SilentlyContinue | Out-Null
-Remove-Item -Recurse -Force "$env:SystemDrive\Users\Public\Desktop\Microsoft Edge.lnk" -ErrorAction SilentlyContinue | Out-Null
-# stop edge running
-$stop = "MicrosoftEdgeUpdate", "OneDrive", "WidgetService", "Widgets", "msedge", "Resume", "CrossDeviceResume", "msedgewebview2"
-$stop | ForEach-Object { Stop-Process -Name $_ -Force -ErrorAction SilentlyContinue }
-# uninstall uwp edge & bing apps
-Get-AppxPackage -allusers *Microsoft.MicrosoftEdge.Stable* | Remove-AppxPackage
-Get-AppxPackage -allusers *Microsoft.BingNews* | Remove-AppxPackage
-Get-AppxPackage -allusers *Microsoft.BingSearch* | Remove-AppxPackage
-Get-AppxPackage -allusers *Microsoft.BingWeather* | Remove-AppxPackage
-#>
-Clear-Host
-Write-Host "Restart to apply . . ."
-$null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
-exit
-
-      }
-    2 {
-
-Clear-Host
-$progresspreference = 'silentlycontinue'
-Write-Host "Installing & Updating: Edge . . ."
-# stop edge running
-$stop = "MicrosoftEdgeUpdate", "OneDrive", "WidgetService", "Widgets", "msedge", "Resume", "CrossDeviceResume", "msedgewebview2"
-$stop | ForEach-Object { Stop-Process -Name $_ -Force -ErrorAction SilentlyContinue }
-# install copilot
-Get-AppXPackage -AllUsers *Microsoft.Windows.Ai.Copilot.Provider* | ForEach-Object {Add-AppxPackage -DisableDevelopmentMode -Register "$($_.InstallLocation)\AppXManifest.xml"}
-# enable edge updates regedit
-cmd /c "reg delete `"HKLM\SOFTWARE\Microsoft\EdgeUpdate`" /f >nul 2>&1"
-# remove allow edge uninstall regedit
-cmd /c "reg delete `"HKLM\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdateDev`" /f >nul 2>&1"
-# download edge installer
-Get-FileFromWeb -URL "https://go.microsoft.com/fwlink/?linkid=2109047&Channel=Stable&language=en&brand=M100" -File "$env:TEMP\Edge.exe"
-# start edge installer
-Start-Process -wait "$env:TEMP\Edge.exe"
-# stop edge running
-$stop = "MicrosoftEdgeUpdate", "OneDrive", "WidgetService", "Widgets", "msedge", "Resume", "CrossDeviceResume", "msedgewebview2"
-$stop | ForEach-Object { Stop-Process -Name $_ -Force -ErrorAction SilentlyContinue }
-# download edge webview installer
-Get-FileFromWeb -URL "https://msedge.sf.dl.delivery.mp.microsoft.com/filestreamingservice/files/304fddef-b073-4e0a-b1ff-c2ea02584017/MicrosoftEdgeWebview2Setup.exe" -File "$env:TEMP\EdgeWebView.exe"
-# start edge webview installer
-Start-Process -wait "$env:TEMP\EdgeWebView.exe"
-# stop edge running
-$stop = "MicrosoftEdgeUpdate", "OneDrive", "WidgetService", "Widgets", "msedge", "msedgewebview2"
-$stop | ForEach-Object { Stop-Process -Name $_ -Force -ErrorAction SilentlyContinue }
-# add edge shortcuts
-$WshShell = New-Object -comObject WScript.Shell
-$Shortcut = $WshShell.CreateShortcut("$env:SystemDrive\Windows\System32\config\systemprofile\AppData\Roaming\Microsoft\Internet Explorer\Quick Launch\Microsoft Edge.lnk")
-$Shortcut.TargetPath = "$env:SystemDrive\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
-$Shortcut.Save()
-$WshShell = New-Object -comObject WScript.Shell
-$Shortcut = $WshShell.CreateShortcut("$env:USERPROFILE\AppData\Roaming\Microsoft\Internet Explorer\Quick Launch\Microsoft Edge.lnk")
-$Shortcut.TargetPath = "$env:SystemDrive\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
-$Shortcut.Save()
-$WshShell = New-Object -comObject WScript.Shell
-$Shortcut = $WshShell.CreateShortcut("$env:USERPROFILE\AppData\Roaming\Microsoft\Internet Explorer\Quick Launch\User Pinned\TaskBar\Microsoft Edge.lnk")
-$Shortcut.TargetPath = "$env:SystemDrive\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
-$Shortcut.Save()
-$WshShell = New-Object -comObject WScript.Shell
-$Shortcut = $WshShell.CreateShortcut("$env:USERPROFILE\AppData\Roaming\Microsoft\Internet Explorer\Quick Launch\User Pinned\TaskBar\Tombstones\Microsoft Edge.lnk")
-$Shortcut.TargetPath = "$env:SystemDrive\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
-$Shortcut.Save()
-$WshShell = New-Object -comObject WScript.Shell
-$Shortcut = $WshShell.CreateShortcut("$env:ProgramData\Microsoft\Windows\Start Menu\Programs\Microsoft Edge.lnk")
-$Shortcut.TargetPath = "$env:SystemDrive\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
-$Shortcut.Save()
-$WshShell = New-Object -comObject WScript.Shell
-$Shortcut = $WshShell.CreateShortcut("$env:SystemDrive\Users\Public\Desktop\Microsoft Edge.lnk")
-$Shortcut.TargetPath = "$env:SystemDrive\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
-$Shortcut.Save()
-# install uwp edge & bing apps
-Get-AppXPackage -AllUsers *Microsoft.MicrosoftEdge.Stable* | ForEach-Object {Add-AppxPackage -DisableDevelopmentMode -Register -ErrorAction SilentlyContinue "$($_.InstallLocation)\AppXManifest.xml"}
-Get-AppXPackage -AllUsers *Microsoft.BingNews* | ForEach-Object {Add-AppxPackage -DisableDevelopmentMode -Register -ErrorAction SilentlyContinue "$($_.InstallLocation)\AppXManifest.xml"}
-Get-AppXPackage -AllUsers *Microsoft.BingSearch* | ForEach-Object {Add-AppxPackage -DisableDevelopmentMode -Register -ErrorAction SilentlyContinue "$($_.InstallLocation)\AppXManifest.xml"}
-Get-AppXPackage -AllUsers *Microsoft.BingWeather* | ForEach-Object {Add-AppxPackage -DisableDevelopmentMode -Register -ErrorAction SilentlyContinue "$($_.InstallLocation)\AppXManifest.xml"}
-Clear-Host
-Write-Host "Restart to apply . . ."
-$null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
-# open ublock origin in web browser
-Start-Process "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe" "https://microsoftedge.microsoft.com/addons/detail/ublock-origin/odfafepnkmbhccpbejgmiehpchacaeak"
-exit
-
-      }
-    } } else { Write-Host "Invalid input. Please select a valid option (1-2)." } }
