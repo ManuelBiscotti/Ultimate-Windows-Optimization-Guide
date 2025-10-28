@@ -153,30 +153,8 @@ Write-Host "2. Updates: Default"
 		        } while ($running)
 	            
 		        # Show Windows Update settings
-		        $regPath = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\Explorer'
-		        $name = 'SettingsPageVisibility'
-		        $backupName = 'SettingsPageVisibility.backup'
-	            
-		        $backup = (Get-ItemProperty -Path $regPath -Name $backupName -ErrorAction SilentlyContinue).$backupName
-	            
-		        if ($null -ne $backup -and $backup -ne '') {
-		            # restore previous value
-		            Set-ItemProperty -Path $regPath -Name $name -Value $backup -Type String
-		            Remove-ItemProperty -Path $regPath -Name $backupName -ErrorAction SilentlyContinue
-		            "Restored previous SettingsPageVisibility value."
-		        } elseif ($backup -eq '') {
-		            # we created a blank backup meaning there was no previous value -> remove the setting
-		            Remove-ItemProperty -Path $regPath -Name $name -ErrorAction SilentlyContinue
-		            Remove-ItemProperty -Path $regPath -Name $backupName -ErrorAction SilentlyContinue
-		            "Removed SettingsPageVisibility (no previous value existed)."
-		        } else {
-		            # no backup present -> just remove the setting
-		            Remove-ItemProperty -Path $regPath -Name $name -ErrorAction SilentlyContinue
-		            "No backup found. Removed SettingsPageVisibility if present."
-		        }
-	
-				# refresh Settings app
-				Get-Process -Name "SystemSettings","Settings" -ErrorAction SilentlyContinue | ForEach-Object { $_.CloseMainWindow() | Out-Null; Start-Sleep -Milliseconds 200; $_ | Stop-Process -Force -ErrorAction SilentlyContinue }
+				Remove-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\Explorer" -Name "SettingsPageVisibility" -ErrorAction SilentlyContinue
+				Get-Process -Name "SystemSettings","Settings" -ErrorAction SilentlyContinue | ForEach-Object { $_ | Stop-Process -Force -ErrorAction SilentlyContinue }
 
 				Clear-Host
 				Write-Host "Restart to apply . . ."
