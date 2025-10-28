@@ -196,7 +196,23 @@ cmd /c "taskkill /F /IM TextInputHost.exe >nul 2>&1"
 $d=Get-ChildItem "$env:SystemRoot\SystemApps" -Dir -Filter "MicrosoftWindows.Client.CBS_*"|Select-Object -First 1 -ExpandProperty FullName
 if($d){$x=Join-Path $d "TextInputHost.exe"
 if(Test-Path $x){cmd /c "takeown /f `"$x`" >nul 2>&1 & icacls `"$x`" /grant *S-1-3-4:F >nul 2>&1 & move /y `"$x`" `"$env:SystemRoot\TextInputHost.exe.bak`" >nul 2>&1"}
-}			
+}
+# schedule bloatware killer task
+$dir="$env:ProgramData\Bloatware"
+New-Item $dir -ItemType Directory -Force  *> $null
+$script=@'
+for ($i = 1; $i -le 3; $i++) {
+    "gamingservices","AggregatorHost","MoUsoCoreWorker","UserOOBEBroker",TextInputHost,
+    "WinStore.App","msedge","SearchApp","ConnectedUserExperiences","CrossDeviceResume",
+    "MicrosoftEdgeUpdate","msedgewebview2","ONENOTEM" | % { Get-Process $_ -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue }
+    "MSDTC","VSS","uhssvc","Spooler","WSearch" | % { Stop-Service $_ -Force -ErrorAction SilentlyContinue }
+    Start-Sleep -Seconds 1
+}
+'@
+$script | Set-Content "$dir\KillBloatware.ps1" -Encoding UTF8 -Force *> $null
+$trigger=New-ScheduledTaskTrigger -AtStartup
+$action=New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$dir\KillBloatware.ps1`""
+Register-ScheduledTask -TaskName "KillBloatwareAtStartup" -Action $action -Trigger $trigger -RunLevel Highest -User "SYSTEM" -Force *> $null	
 # uninstall remote desktop connection
 Start-Process "mstsc" -ArgumentList "/Uninstall"
 Clear-Host
