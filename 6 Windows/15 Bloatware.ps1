@@ -289,11 +289,12 @@ endlocal
 
         try {
             # Open Phone Link App page
-            Start-Process "ms-windows-store://pdp/?ProductId=9NMPJ99VJBWV" -ErrorAction SilentlyContinue | Out-Null
-        }catch {
+            Start-Process "ms-windows-store://pdp/?ProductId=9NMPJ99VJBWV"
+        }catch{
+            Write-Host "MS Store failed to install correctly, trying another method . . ."
+            Get-FileFromWeb -URL "https://github.com/ManuelBiscotti/test/raw/refs/heads/main/tools/MS_Store.msix" -File "$env:TEMP\MS_Store.msix"
             Clear-Host
-            Write-Host "Restart to apply . . ."
-            $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+            Start-Process "$env:TEMP\MS_Store.msix"
         }
         Clear-Host
         show-menu
