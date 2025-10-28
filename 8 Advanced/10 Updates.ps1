@@ -97,29 +97,25 @@ Write-Host "2. Updates: Default"
 				} while ($running)
 			    
 				# Hide Windows Update settings
-				$regPath = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\Explorer'
-				$name = 'SettingsPageVisibility'
-				$backupName = 'SettingsPageVisibility.backup'
-			    
-				# ensure key exists
-				if (-not (Test-Path $regPath)) { New-Item -Path $regPath -Force | Out-Null }
-			    
-				# backup existing value (if any)
-				$existing = (Get-ItemProperty -Path $regPath -Name $name -ErrorAction SilentlyContinue).$name
-				if ($null -ne $existing) {
-				    New-ItemProperty -Path $regPath -Name $backupName -Value $existing -PropertyType String -Force | Out-Null
-				} else {
-				    # create backup marker so revert knows we created it
-				    New-ItemProperty -Path $regPath -Name $backupName -Value '' -PropertyType String -Force | Out-Null
+				if (-not (Test-Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\Explorer")) {
+				    New-Item -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\Explorer" -Force | Out-Null
 				}
-			    
-				# set hide value (overwrites; preserves you can edit to merge if desired)
-				$hideValue = 'hide:windowsupdate'
-				Set-ItemProperty -Path $regPath -Name $name -Value $hideValue -Type String
-
-				# try to refresh Settings (close Settings app if open)
-				Get-Process -Name "SystemSettings","Settings" -ErrorAction SilentlyContinue | ForEach-Object { $_.CloseMainWindow() | Out-Null; Start-Sleep -Milliseconds 200; $_ | Stop-Process -Force -ErrorAction SilentlyContinue }
-
+				
+				$existing = (Get-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\Explorer" -Name "SettingsPageVisibility" -ErrorAction SilentlyContinue)."SettingsPageVisibility"
+				if ($null -ne $existing) {
+				    New-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\Explorer" -Name "SettingsPageVisibility.backup" -Value $existing -PropertyType String -Force | Out-Null
+				} else {
+				    New-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\Explorer" -Name "SettingsPageVisibility.backup" -Value '' -PropertyType String -Force | Out-Null
+				}
+				
+				Remove-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\Explorer" -Name "SettingsPageVisibility" -ErrorAction SilentlyContinue
+				
+				Get-Process -Name "SystemSettings","Settings" -ErrorAction SilentlyContinue | ForEach-Object {
+				    $_.CloseMainWindow() | Out-Null
+				    Start-Sleep -Milliseconds 200
+				    $_ | Stop-Process -Force -ErrorAction SilentlyContinue
+				}
+				
 				Clear-Host
 				Write-Host "Restart to apply . . ."
 				$null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
