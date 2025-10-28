@@ -200,12 +200,18 @@ if(Test-Path $x){cmd /c "takeown /f `"$x`" >nul 2>&1 & icacls `"$x`" /grant *S-1
 # schedule bloatware killer task
 $dir="$env:ProgramData\Bloatware"
 New-Item $dir -ItemType Directory -Force  *> $null
-$script=@'
+$script = @'
 for ($i = 1; $i -le 3; $i++) {
-    "gamingservices","AggregatorHost","MoUsoCoreWorker","UserOOBEBroker",TextInputHost,
+    "gamingservices","AggregatorHost","MoUsoCoreWorker","UserOOBEBroker","TextInputHost",
     "WinStore.App","msedge","SearchApp","ConnectedUserExperiences","CrossDeviceResume",
-    "MicrosoftEdgeUpdate","msedgewebview2","ONENOTEM" | % { Get-Process $_ -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue }
-    "MSDTC","VSS","uhssvc","Spooler","WSearch" | % { Stop-Service $_ -Force -ErrorAction SilentlyContinue }
+    "MicrosoftEdgeUpdate","msedgewebview2","ONENOTEM" | ForEach-Object {
+        Get-Process $_ -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+    }
+
+    "MSDTC","VSS","uhssvc","Spooler","WSearch" | ForEach-Object {
+        Stop-Service $_ -Force -ErrorAction SilentlyContinue
+    }
+
     Start-Sleep -Seconds 1
 }
 '@
@@ -397,7 +403,7 @@ Write-Host "Installing: One Drive. Please wait . . ."
 cmd /c "C:\Windows\SysWOW64\OneDriveSetup.exe >nul 2>&1"
 # install onedrive w11
 cmd /c "C:\Windows\System32\OneDriveSetup.exe >nul 2>&1"
-Start-Process "OneDrive" -ErrorAction SilentlyContinue
+Start-Process "$env:OneDrive"
 Clear-Host
 Write-Host "Restart to apply . . ."
 $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
