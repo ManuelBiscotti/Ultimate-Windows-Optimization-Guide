@@ -61,12 +61,6 @@
     1 {
 
 Clear-Host
-exit
-
-      }
-    1 {
-
-Clear-Host
 $progresspreference = 'silentlycontinue'
 Write-Host "Uninstalling: UWP Apps. Please wait . . ."
 # uninstall all uwp apps keep nvidia & cbs
