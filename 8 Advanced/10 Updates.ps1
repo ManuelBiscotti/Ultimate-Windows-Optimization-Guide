@@ -1,290 +1,190 @@
-    If (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]"Administrator"))
-    {Start-Process PowerShell.exe -ArgumentList ("-NoProfile -ExecutionPolicy Bypass -File `"{0}`"" -f $PSCommandPath) -Verb RunAs
-    Exit}
-    $Host.UI.RawUI.WindowTitle = $myInvocation.MyCommand.Definition + " (Administrator)"
-    $Host.UI.RawUI.BackgroundColor = "Black"
-	$Host.PrivateData.ProgressBackgroundColor = "Black"
-    $Host.PrivateData.ProgressForegroundColor = "White"
-    Clear-Host
+If (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]"Administrator")){
+  Start-Process PowerShell.exe -ArgumentList ("-NoProfile -ExecutionPolicy Bypass -File `"{0}`"" -f $PSCommandPath) -Verb RunAs
+  Exit
+}
 
-    function Get-FileFromWeb {
-    param ([Parameter(Mandatory)][string]$URL, [Parameter(Mandatory)][string]$File)
-    function Show-Progress {
-    param ([Parameter(Mandatory)][Single]$TotalValue, [Parameter(Mandatory)][Single]$CurrentValue, [Parameter(Mandatory)][string]$ProgressText, [Parameter()][int]$BarSize = 10, [Parameter()][switch]$Complete)
-    $percent = $CurrentValue / $TotalValue
-    $percentComplete = $percent * 100
-    if ($psISE) { Write-Progress "$ProgressText" -id 0 -percentComplete $percentComplete }
-    else { Write-Host -NoNewLine "`r$ProgressText $(''.PadRight($BarSize * $percent, [char]9608).PadRight($BarSize, [char]9617)) $($percentComplete.ToString('##0.00').PadLeft(6)) % " }
-    }
-    try {
-    $request = [System.Net.HttpWebRequest]::Create($URL)
-    $response = $request.GetResponse()
-    if ($response.StatusCode -eq 401 -or $response.StatusCode -eq 403 -or $response.StatusCode -eq 404) { throw "Remote file either doesn't exist, is unauthorized, or is forbidden for '$URL'." }
-    if ($File -match '^\.\\') { $File = Join-Path (Get-Location -PSProvider 'FileSystem') ($File -Split '^\.')[1] }
-    if ($File -and !(Split-Path $File)) { $File = Join-Path (Get-Location -PSProvider 'FileSystem') $File }
-    if ($File) { $fileDirectory = $([System.IO.Path]::GetDirectoryName($File)); if (!(Test-Path($fileDirectory))) { [System.IO.Directory]::CreateDirectory($fileDirectory) | Out-Null } }
-    [long]$fullSize = $response.ContentLength
-    [byte[]]$buffer = new-object byte[] 1048576
-    [long]$total = [long]$count = 0
-    $reader = $response.GetResponseStream()
-    $writer = new-object System.IO.FileStream $File, 'Create'
-    do {
-    $count = $reader.Read($buffer, 0, $buffer.Length)
-    $writer.Write($buffer, 0, $count)
-    $total += $count
-    if ($fullSize -gt 0) { Show-Progress -TotalValue $fullSize -CurrentValue $total -ProgressText " $($File.Name)" }
-    } while ($count -gt 0)
-    }
-    finally {
-    $reader.Close()
-    $writer.Close()
-    }
-    }
+$Host.UI.RawUI.WindowTitle = $myInvocation.MyCommand.Definition + " (Administrator)"
+$Host.UI.RawUI.BackgroundColor = "Black"
+$Host.PrivateData.ProgressBackgroundColor = "Black"
+$Host.PrivateData.ProgressForegroundColor = "White"
+Clear-Host
 
-    Write-Host "1. Updates: Off"
-    Write-Host "2. Updates: Default"
-    while ($true) {
+$ProgressPreference = 'SilentlyContinue'  
+$ErrorActionPreference = 'SilentlyContinue'
+
+function RunAsTI($cmd, $arg) {
+
+	<#
+	  [FEATURES]
+	  - innovative HKCU load, no need for reg load / unload ping-pong; programs get the user profile
+	  - sets ownership privileges, high priority, and explorer support; get System if TI unavailable
+	  - accepts special characters in paths for which default run as administrator fails
+	  - can copy-paste snippet directly in powershell console then use it manually
+	  [USAGE]
+	  - First copy-paste RunAsTI snippet before .ps1 script content
+	  - Then call it anywhere after to launch programs with arguments as TI
+	    RunAsTI regedit
+	    RunAsTI powershell '-noprofile -nologo -noexit -c [environment]::Commandline'
+	    RunAsTI cmd '/k "whoami /all & color e0"'
+	    RunAsTI "C:\System Volume Information"
+	  - Or just relaunch the script once if not already running as TI:
+	    if (((whoami /user)-split' ')[-1]-ne'S-1-5-18') {
+	      RunAsTI powershell "-f $($MyInvocation.MyCommand.Path) $($args[0]) $($args[1..99])"; return
+	    }
+	  2022.01.28: workaround for 11 release (22000) hindering explorer as TI
+	#>
+
+    $id = 'RunAsTI'; $key = "Registry::HKU\$(((whoami /user)-split' ')[-1])\Volatile Environment"; $code = @'
+$I=[int32]; $M=$I.module.gettype("System.Runtime.Interop`Services.Mar`shal"); $P=$I.module.gettype("System.Int`Ptr"); $S=[string]
+$D=@(); $T=@(); $DM=[AppDomain]::CurrentDomain."DefineDynami`cAssembly"(1,1)."DefineDynami`cModule"(1); $Z=[uintptr]::size
+0..5|% {$D += $DM."Defin`eType"("AveYo_$_",1179913,[ValueType])}; $D += [uintptr]; 4..6|% {$D += $D[$_]."MakeByR`efType"()}
+$F='kernel','advapi','advapi', ($S,$S,$I,$I,$I,$I,$I,$S,$D[7],$D[8]), ([uintptr],$S,$I,$I,$D[9]),([uintptr],$S,$I,$I,[byte[]],$I)
+0..2|% {$9=$D[0]."DefinePInvok`eMethod"(('CreateProcess','RegOpenKeyEx','RegSetValueEx')[$_],$F[$_]+'32',8214,1,$S,$F[$_+3],1,4)}
+$DF=($P,$I,$P),($I,$I,$I,$I,$P,$D[1]),($I,$S,$S,$S,$I,$I,$I,$I,$I,$I,$I,$I,[int16],[int16],$P,$P,$P,$P),($D[3],$P),($P,$P,$I,$I)
+1..5|% {$k=$_; $n=1; $DF[$_-1]|% {$9=$D[$k]."Defin`eField"('f' + $n++, $_, 6)}}; 0..5|% {$T += $D[$_]."Creat`eType"()}
+0..5|% {nv "A$_" ([Activator]::CreateInstance($T[$_])) -fo}; function F ($1,$2) {$T[0]."G`etMethod"($1).invoke(0,$2)}
+$TI=(whoami /groups)-like'*1-16-16384*'; $As=0; if(!$cmd) {$cmd='control';$arg='admintools'}; if ($cmd-eq'This PC'){$cmd='file:'}
+if (!$TI) {'TrustedInstaller','lsass','winlogon'|% {if (!$As) {$9=sc.exe start $_; $As=@(get-process -name $_ -ea 0|% {$_})[0]}}
+function M ($1,$2,$3) {$M."G`etMethod"($1,[type[]]$2).invoke(0,$3)}; $H=@(); $Z,(4*$Z+16)|% {$H += M "AllocHG`lobal" $I $_}
+M "WriteInt`Ptr" ($P,$P) ($H[0],$As.Handle); $A1.f1=131072; $A1.f2=$Z; $A1.f3=$H[0]; $A2.f1=1; $A2.f2=1; $A2.f3=1; $A2.f4=1
+$A2.f6=$A1; $A3.f1=10*$Z+32; $A4.f1=$A3; $A4.f2=$H[1]; M "StructureTo`Ptr" ($D[2],$P,[boolean]) (($A2 -as $D[2]),$A4.f2,$false)
+$Run=@($null, "powershell -win 1 -nop -c iex `$env:R; # $id", 0, 0, 0, 0x0E080600, 0, $null, ($A4 -as $T[4]), ($A5 -as $T[5]))
+F 'CreateProcess' $Run; return}; $env:R=''; rp $key $id -force; $priv=[diagnostics.process]."GetM`ember"('SetPrivilege',42)[0]
+'SeSecurityPrivilege','SeTakeOwnershipPrivilege','SeBackupPrivilege','SeRestorePrivilege' |% {$priv.Invoke($null, @("$_",2))}
+$HKU=[uintptr][uint32]2147483651; $NT='S-1-5-18'; $reg=($HKU,$NT,8,2,($HKU -as $D[9])); F 'RegOpenKeyEx' $reg; $LNK=$reg[4]
+function L ($1,$2,$3) {sp 'HKLM:\Software\Classes\AppID\{CDCBCFCA-3CDC-436f-A4E2-0E02075250C2}' 'RunAs' $3 -force -ea 0
+$b=[Text.Encoding]::Unicode.GetBytes("\Registry\User\$1"); F 'RegSetValueEx' @($2,'SymbolicLinkValue',0,6,[byte[]]$b,$b.Length)}
+function Q {[int](gwmi win32_process -filter 'name="explorer.exe"'|?{$_.getownersid().sid-eq$NT}|select -last 1).ProcessId}
+$11bug=($((gwmi Win32_OperatingSystem).BuildNumber)-eq'22000')-AND(($cmd-eq'file:')-OR(test-path -lit $cmd -PathType Container))
+if ($11bug) {'System.Windows.Forms','Microsoft.VisualBasic' |% {[Reflection.Assembly]::LoadWithPartialName("'$_")}}
+if ($11bug) {$path='^(l)'+$($cmd -replace '([\+\^\%\~\(\)\[\]])','{$1}')+'{ENTER}'; $cmd='control.exe'; $arg='admintools'}
+L ($key-split'\\')[1] $LNK ''; $R=[diagnostics.process]::start($cmd,$arg); if ($R) {$R.PriorityClass='High'; $R.WaitForExit()}
+if ($11bug) {$w=0; do {if($w-gt40){break}; sleep -mi 250;$w++} until (Q); [Microsoft.VisualBasic.Interaction]::AppActivate($(Q))}
+if ($11bug) {[Windows.Forms.SendKeys]::SendWait($path)}; do {sleep 7} while(Q); L '.Default' $LNK 'Interactive User'
+'@; $V = ''; 'cmd', 'arg', 'id', 'key' | ForEach-Object { $V += "`n`$$_='$($(Get-Variable $_ -val)-replace"'","''")';" }; Set-ItemProperty $key $id $($V, $code) -type 7 -force -ea 0
+	Start-Process powershell -args "-win 1 -nop -c `n$V `$env:R=(gi `$key -ea 0).getvalue(`$id)-join''; iex `$env:R" -verb runas -Wait
+} # lean & mean snippet by AveYo, 2022.01.28
+
+Write-Host "1. Updates: Off"
+Write-Host "2. Updates: Default"
+	while ($true) {
     $choice = Read-Host " "
     if ($choice -match '^[1-2]$') {
-    switch ($choice) {
-    1 {
+		switch ($choice) {
+			1 {
 
-Clear-Host
-Write-Host "Updates: Off. Please wait . . ."
-# download lgpo
-Get-FileFromWeb -URL "https://download.microsoft.com/download/8/5/C/85C25433-A1B0-4FFA-9429-7E023E7DA8D8/LGPO.zip" -File "$env:TEMP\LGPO.zip"
-# extract files
-Expand-Archive "$env:TEMP\LGPO.zip" -DestinationPath "$env:TEMP" -ErrorAction SilentlyContinue
-# create disableupdates config for lgpo
-$MultilineComment = @"
-Computer
-Software\Policies\Microsoft\Windows\WindowsUpdate
-WUServer
-SZ:https://fuckyoumicrosoft.com/
+				Clear-Host
+				Write-Host "Updates: Off. Please wait . . ."
+				$zip = Join-Path $env:TEMP 'windows-update-disabler-main.zip'
+				$batch = Join-Path $env:TEMP 'windows-update-disabler-main\disable updates.bat'
+			    
+				Invoke-WebRequest -Uri 'https://github.com/tsgrgo/windows-update-disabler/releases/latest/download/windows-update-disabler-main.zip' -OutFile $zip
+				Expand-Archive -Path $zip -DestinationPath "$env:TEMP" -Force
+			    
+				(Get-Content $batch) | Where-Object {
+					$_ -notmatch 'if not "%1"=="admin"' -and
+					$_ -notmatch 'if not "%2"=="system"' -and
+					$_ -notmatch '^\s*pause\s*$'
+				} | Set-Content -Path $batch -Encoding ASCII
+			    
+				RunAsTI $batch ""
+			    
+				# Wait for process completion
+				do {
+					Start-Sleep -Seconds 2
+					$running = Get-WmiObject Win32_Process -Filter "Name='cmd.exe'" 2>$null |
+				    	Where-Object { $_.CommandLine -like "*disable updates.bat*" }
+				} while ($running)
+			    
+				# Hide Windows Update settings
+				$regPath = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\Explorer'
+				$name = 'SettingsPageVisibility'
+				$backupName = 'SettingsPageVisibility.backup'
+			    
+				# ensure key exists
+				if (-not (Test-Path $regPath)) { New-Item -Path $regPath -Force | Out-Null }
+			    
+				# backup existing value (if any)
+				$existing = (Get-ItemProperty -Path $regPath -Name $name -ErrorAction SilentlyContinue).$name
+				if ($null -ne $existing) {
+				    New-ItemProperty -Path $regPath -Name $backupName -Value $existing -PropertyType String -Force | Out-Null
+				} else {
+				    # create backup marker so revert knows we created it
+				    New-ItemProperty -Path $regPath -Name $backupName -Value '' -PropertyType String -Force | Out-Null
+				}
+			    
+				# set hide value (overwrites; preserves you can edit to merge if desired)
+				$hideValue = 'hide:windowsupdate'
+				Set-ItemProperty -Path $regPath -Name $name -Value $hideValue -Type String
 
-Computer
-Software\Policies\Microsoft\Windows\WindowsUpdate
-WUStatusServer
-SZ:https://fuckyoumicrosoft.com/
+				# try to refresh Settings (close Settings app if open)
+				Get-Process -Name "SystemSettings","Settings" -ErrorAction SilentlyContinue | ForEach-Object { $_.CloseMainWindow() | Out-Null; Start-Sleep -Milliseconds 200; $_ | Stop-Process -Force -ErrorAction SilentlyContinue }
 
-Computer
-Software\Policies\Microsoft\Windows\WindowsUpdate
-UpdateServiceUrlAlternate
-SZ:https://fuckyoumicrosoft.com/
+				Clear-Host
+				Write-Host "Restart to apply . . ."
+				$null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+				Start-Process ms-settings:windowsupdate
+				exit
+				
+			}
+			2 {
 
-Computer
-Software\Policies\Microsoft\Windows\WindowsUpdate
-FillEmptyContentUrls
-DELETE
+				Clear-Host
+		        Write-Host "Updates: Default. Please wait . . ."
+		        $zip = Join-Path $env:TEMP 'windows-update-disabler-main.zip'
+		        $batch = Join-Path $env:TEMP 'windows-update-disabler-main\enable updates.bat'
+	            
+		        Invoke-WebRequest -Uri 'https://github.com/tsgrgo/windows-update-disabler/releases/latest/download/windows-update-disabler-main.zip' -OutFile $zip
+		        Expand-Archive -Path $zip -DestinationPath "$env:TEMP" -Force
+	            
+		        (Get-Content $batch) | Where-Object {
+		        	$_ -notmatch 'if not "%1"=="admin"' -and
+		        	$_ -notmatch 'if not "%2"=="system"' -and
+		        	$_ -notmatch '^\s*pause\s*$'
+		        } | Set-Content -Path $batch -Encoding ASCII
+	            
+		        RunAsTI $batch ""
+	            
+		        # Wait for process completion
+		        do {
+		        	Start-Sleep -Seconds 2
+		        	$running = Get-WmiObject Win32_Process -Filter "Name='cmd.exe'" 2>$null |
+		            	Where-Object { $_.CommandLine -like "*enable updates.bat*" }
+		        } while ($running)
+	            
+		        # Show Windows Update settings
+		        $regPath = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\Explorer'
+		        $name = 'SettingsPageVisibility'
+		        $backupName = 'SettingsPageVisibility.backup'
+	            
+		        $backup = (Get-ItemProperty -Path $regPath -Name $backupName -ErrorAction SilentlyContinue).$backupName
+	            
+		        if ($null -ne $backup -and $backup -ne '') {
+		            # restore previous value
+		            Set-ItemProperty -Path $regPath -Name $name -Value $backup -Type String
+		            Remove-ItemProperty -Path $regPath -Name $backupName -ErrorAction SilentlyContinue
+		            "Restored previous SettingsPageVisibility value."
+		        } elseif ($backup -eq '') {
+		            # we created a blank backup meaning there was no previous value -> remove the setting
+		            Remove-ItemProperty -Path $regPath -Name $name -ErrorAction SilentlyContinue
+		            Remove-ItemProperty -Path $regPath -Name $backupName -ErrorAction SilentlyContinue
+		            "Removed SettingsPageVisibility (no previous value existed)."
+		        } else {
+		            # no backup present -> just remove the setting
+		            Remove-ItemProperty -Path $regPath -Name $name -ErrorAction SilentlyContinue
+		            "No backup found. Removed SettingsPageVisibility if present."
+		        }
+	
+				# refresh Settings app
+				Get-Process -Name "SystemSettings","Settings" -ErrorAction SilentlyContinue | ForEach-Object { $_.CloseMainWindow() | Out-Null; Start-Sleep -Milliseconds 200; $_ | Stop-Process -Force -ErrorAction SilentlyContinue }
 
-Computer
-Software\Policies\Microsoft\Windows\WindowsUpdate
-SetDisableUXWUAccess
-DWORD:1
-
-Computer
-Software\Policies\Microsoft\Windows\WindowsUpdate
-DoNotConnectToWindowsUpdateInternetLocations
-DWORD:1
-
-Computer
-Software\Policies\Microsoft\Windows\WindowsUpdate
-ExcludeWUDriversInQualityUpdate
-DWORD:1
-
-Computer
-Software\Policies\Microsoft\Windows\WindowsUpdate\AU
-NoAutoUpdate
-DWORD:1
-
-Computer
-Software\Policies\Microsoft\Windows\WindowsUpdate\AU
-AUOptions
-DELETE
-
-Computer
-Software\Policies\Microsoft\Windows\WindowsUpdate\AU
-AutomaticMaintenanceEnabled
-DELETE
-
-Computer
-Software\Policies\Microsoft\Windows\WindowsUpdate\AU
-ScheduledInstallDay
-DELETE
-
-Computer
-Software\Policies\Microsoft\Windows\WindowsUpdate\AU
-ScheduledInstallTime
-DELETE
-
-Computer
-Software\Policies\Microsoft\Windows\WindowsUpdate\AU
-ScheduledInstallEveryWeek
-DELETE
-
-Computer
-Software\Policies\Microsoft\Windows\WindowsUpdate\AU
-ScheduledInstallFirstWeek
-DELETE
-
-Computer
-Software\Policies\Microsoft\Windows\WindowsUpdate\AU
-ScheduledInstallSecondWeek
-DELETE
-
-Computer
-Software\Policies\Microsoft\Windows\WindowsUpdate\AU
-ScheduledInstallThirdWeek
-DELETE
-
-Computer
-Software\Policies\Microsoft\Windows\WindowsUpdate\AU
-ScheduledInstallFourthWeek
-DELETE
-
-Computer
-Software\Policies\Microsoft\Windows\WindowsUpdate\AU
-AllowMUUpdateService
-DELETE
-
-Computer
-Software\Policies\Microsoft\Windows\WindowsUpdate\AU
-UseWUServer
-DWORD:1
-"@
-Set-Content -Path "$env:TEMP\LGPO_30\DisableUpdates.txt" -Value $MultilineComment -Force
-# import config lgpo
-Start-Process -wait "$env:TEMP\LGPO_30\lgpo.exe" -ArgumentList "/t $env:TEMP\LGPO_30\DisableUpdates.txt" -WindowStyle Hidden
-# update policies
-gpupdate /force | Out-Null
-Clear-Host
-Write-Host "Restart to apply . . ."
-$null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
-Start-Process ms-settings:windowsupdate
-exit
-
-      }
-    2 {
-
-Clear-Host
-Write-Host "Updates: Default. Please wait . . ."
-# download lgpo
-Get-FileFromWeb -URL "https://download.microsoft.com/download/8/5/C/85C25433-A1B0-4FFA-9429-7E023E7DA8D8/LGPO.zip" -File "$env:TEMP\LGPO.zip"
-# extract files
-Expand-Archive "$env:TEMP\LGPO.zip" -DestinationPath "$env:TEMP" -ErrorAction SilentlyContinue
-# create enableupdates config for lgpo
-$MultilineComment = @"
-Computer
-Software\Policies\Microsoft\Windows\WindowsUpdate
-WUServer
-CLEAR
-
-Computer
-Software\Policies\Microsoft\Windows\WindowsUpdate
-WUStatusServer
-CLEAR
-
-Computer
-Software\Policies\Microsoft\Windows\WindowsUpdate
-UpdateServiceUrlAlternate
-CLEAR
-
-Computer
-Software\Policies\Microsoft\Windows\WindowsUpdate
-FillEmptyContentUrls
-CLEAR
-
-Computer
-Software\Policies\Microsoft\Windows\WindowsUpdate
-SetDisableUXWUAccess
-CLEAR
-
-Computer
-Software\Policies\Microsoft\Windows\WindowsUpdate
-DoNotConnectToWindowsUpdateInternetLocations
-CLEAR
-
-Computer
-Software\Policies\Microsoft\Windows\WindowsUpdate
-ExcludeWUDriversInQualityUpdate
-CLEAR
-
-Computer
-Software\Policies\Microsoft\Windows\WindowsUpdate\AU
-NoAutoUpdate
-CLEAR
-
-Computer
-Software\Policies\Microsoft\Windows\WindowsUpdate\AU
-AUOptions
-CLEAR
-
-Computer
-Software\Policies\Microsoft\Windows\WindowsUpdate\AU
-AutomaticMaintenanceEnabled
-CLEAR
-
-Computer
-Software\Policies\Microsoft\Windows\WindowsUpdate\AU
-ScheduledInstallDay
-CLEAR
-
-Computer
-Software\Policies\Microsoft\Windows\WindowsUpdate\AU
-ScheduledInstallTime
-CLEAR
-
-Computer
-Software\Policies\Microsoft\Windows\WindowsUpdate\AU
-ScheduledInstallEveryWeek
-CLEAR
-
-Computer
-Software\Policies\Microsoft\Windows\WindowsUpdate\AU
-ScheduledInstallFirstWeek
-CLEAR
-
-Computer
-Software\Policies\Microsoft\Windows\WindowsUpdate\AU
-ScheduledInstallSecondWeek
-CLEAR
-
-Computer
-Software\Policies\Microsoft\Windows\WindowsUpdate\AU
-ScheduledInstallThirdWeek
-CLEAR
-
-Computer
-Software\Policies\Microsoft\Windows\WindowsUpdate\AU
-ScheduledInstallFourthWeek
-CLEAR
-
-Computer
-Software\Policies\Microsoft\Windows\WindowsUpdate\AU
-AllowMUUpdateService
-CLEAR
-
-Computer
-Software\Policies\Microsoft\Windows\WindowsUpdate\AU
-UseWUServer
-CLEAR
-"@
-Set-Content -Path "$env:TEMP\LGPO_30\EnableUpdates.txt" -Value $MultilineComment -Force
-# import config lgpo
-Start-Process -wait "$env:TEMP\LGPO_30\lgpo.exe" -ArgumentList "/t $env:TEMP\LGPO_30\EnableUpdates.txt" -WindowStyle Hidden
-# OVERKILL W11 BUG NOT RESETTING POLICIES
-# delete group policy folders
-cmd /c "RD /S /Q `"%WinDir%\System32\GroupPolicyUsers`" >nul 2>&1"
-cmd /c "RD /S /Q `"%WinDir%\System32\GroupPolicy`" >nul 2>&1"
-# delete policies regedit
-cmd /c "reg delete `"HKLM\SOFTWARE\Microsoft\WindowsUpdate\UpdatePolicy`" /f >nul 2>&1"
-# update policies
-gpupdate /force | Out-Null
-Clear-Host
-Write-Host "Restart to apply . . ."
-$null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
-Start-Process ms-settings:windowsupdate
-exit
-
-      }
-    } } else { Write-Host "Invalid input. Please select a valid option (1-2)." } }
+				Clear-Host
+				Write-Host "Restart to apply . . ."
+				$null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+				Start-Process ms-settings:windowsupdate
+				exit
+				
+			}
+		} 
+	} else { Write-Host "Invalid input. Please select a valid option (1-2)." } 
+}
