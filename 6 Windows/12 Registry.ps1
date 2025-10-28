@@ -15,16 +15,16 @@ $ErrorActionPreference = 'SilentlyContinue'
 Write-Host "1. Registry: Optimize (Recommended)"
 Write-Host "2. Registry: Default"
 while ($true) {
-  $choice = Read-Host " "
-  if ($choice -match '^[1-2]$') {
-    switch ($choice) {
-      1 {
+	$choice = Read-Host " "
+	if ($choice -match '^[1-2]$') {
+		switch ($choice) {
+			1 {
 
-        Clear-Host
-        $progresspreference = 'silentlycontinue'
-        Write-Host "Registry: Optimize . . ."
-        # create reg file
-	      $MultilineComment = @"
+				Clear-Host
+				$progresspreference = 'silentlycontinue'
+				Write-Host "Registry: Optimize . . ."
+				# create reg file
+				$MultilineComment = @"
 Windows Registry Editor Version 5.00
 
 ; --LEGACY CONTROL PANEL--
@@ -2577,37 +2577,36 @@ E0,F6,C5,D5,0E,CA,50,00,00
 [HKEY_LOCAL_MACHINE\SYSTEM\ControlSet001\Services\WSearch]
 "Start"=dword:00000004
 "@
-    
-        Set-Content -Path "$env:TEMP\Registry Optimize.reg" -Value $MultilineComment -Force
-        # edit reg file
-        $path = "$env:TEMP\Registry Optimize.reg"
-        (Get-Content $path) -replace "\?","$" | Out-File $path
-        # Download blanc.ico into C:\Windows
-	      Invoke-WebRequest -Uri "https://github.com/benzaria/remove_shortcut_arrow/raw/refs/heads/main/blanc.ico" -OutFile "C:\\Windows\\blanc.ico"
-        # import reg file
-        Regedit.exe /S "$env:TEMP\Registry Optimize.reg"
-        Timeout /T 1 | Out-Null
 
-        # EDGE
-	      # microsoft-edge-debloater
-	      Invoke-WebRequest -Uri "https://github.com/bibicadotnet/microsoft-edge-debloater/archive/refs/heads/main.zip" -OutFile "$env:TEMP\main.zip"
-	      Expand-Archive "$env:TEMP\main.zip" -DestinationPath "$env:TEMP" -Force
-	      # edge-debloat
-	      Invoke-WebRequest -Uri "https://github.com/marlock9/edge-debloat/raw/refs/heads/main/edge-debloat.reg" -OutFile "$env:TEMP\edge-debloat.reg"
-	      # msedge-debloat.reg
-	      Invoke-WebRequest -Uri "https://gist.github.com/yashgorana/83a2939d739e312820f39703fe991412/raw/f93921f5887b3c7f443bfac35b573e0dc085ad03/msedge-debloat.reg" -OutFile "$env:TEMP\msedge-debloat.reg"
-	      # import reg files
-	      Regedit.exe /S "$env:TEMP\microsoft-edge-debloater-main\vi.edge.reg"
-	      Timeout /T 1 | Out-Null
-	      Regedit.exe /S "$env:TEMP\msedge-debloat.reg"
-	      Timeout /T 1 | Out-Null
-	      Regedit.exe /S "$env:TEMP\edge-debloat.reg"
-	      Timeout /T 1 | Out-Null
-	      # remove extensions
-	      Remove-Item -Path "HKLM:\Software\Policies\Microsoft\Edge\ExtensionInstallForcelist" -Recurse -Force -ErrorAction SilentlyContinue
-	
-	      # create reg file
-	      $MultilineComment = @'
+				Set-Content -Path "$env:TEMP\Registry Optimize.reg" -Value $MultilineComment -Force
+	            # edit reg file
+                $path = "$env:TEMP\Registry Optimize.reg"
+                (Get-Content $path) -replace "\?","$" | Out-File $path
+                # Download blanc.ico into C:\Windows
+                Invoke-WebRequest -Uri "https://github.com/benzaria/remove_shortcut_arrow/raw/refs/heads/main/blanc.ico" -OutFile "C:\\Windows\\blanc.ico"
+	            # import reg file
+                Regedit.exe /S "$env:TEMP\Registry Optimize.reg"
+                Timeout /T 1 | Out-Null
+				# EDGE
+				# microsoft-edge-debloater
+				Invoke-WebRequest -Uri "https://github.com/bibicadotnet/microsoft-edge-debloater/archive/refs/heads/main.zip" -OutFile "$env:TEMP\main.zip"
+				Expand-Archive "$env:TEMP\main.zip" -DestinationPath "$env:TEMP" -Force
+				# edge-debloat
+				Invoke-WebRequest -Uri "https://github.com/marlock9/edge-debloat/raw/refs/heads/main/edge-debloat.reg" -OutFile "$env:TEMP\edge-debloat.reg"
+				# msedge-debloat.reg
+				Invoke-WebRequest -Uri "https://gist.github.com/yashgorana/83a2939d739e312820f39703fe991412/raw/f93921f5887b3c7f443bfac35b573e0dc085ad03/msedge-debloat.reg" -OutFile "$env:TEMP\msedge-debloat.reg"
+				# import reg files
+				Regedit.exe /S "$env:TEMP\microsoft-edge-debloater-main\vi.edge.reg"
+				Timeout /T 1 | Out-Null
+				Regedit.exe /S "$env:TEMP\msedge-debloat.reg"
+				Timeout /T 1 | Out-Null
+				Regedit.exe /S "$env:TEMP\edge-debloat.reg"
+				Timeout /T 1 | Out-Null
+				# remove extensions
+				Remove-Item -Path "HKLM:\Software\Policies\Microsoft\Edge\ExtensionInstallForcelist" -Recurse -Force -ErrorAction SilentlyContinue
+			
+				# create reg file
+				$MultilineComment = @'
 Windows Registry Editor Version 5.00
 
 ; Force install uBlock origin and webrtc control extensions
@@ -2724,30 +2723,30 @@ Windows Registry Editor Version 5.00
 [HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Policies\Microsoft\MicrosoftEdge\PhishingFilter]
 "EnabledV9"=dword:00000000
 '@
-	      # import reg file
-	      Set-Content -Path "$env:TEMP\Edge.reg" -Value $MultilineComment -Force	
-	      Regedit.exe /S "$env:TEMP\Edge.reg"
-        Timeout /T 1 | Out-Null
-	      # disable edge tasks
-	      Get-ScheduledTask | Where-Object { $_.TaskName -like "*Edge*" } | ForEach-Object { Disable-ScheduledTask -TaskName $_.TaskName | Out-Null }
-        
-	      # Signout Lockscreen
-	      # create new image
-	      Add-Type -AssemblyName System.Windows.Forms
-	      $screenWidth = [System.Windows.Forms.SystemInformation]::PrimaryMonitorSize.Width
-	      $screenHeight = [System.Windows.Forms.SystemInformation]::PrimaryMonitorSize.Height
-	      Add-Type -AssemblyName System.Drawing
-	      $file = "C:\Windows\Black.jpg"
-	      $edit = New-Object System.Drawing.Bitmap $screenWidth, $screenHeight
-	      $color = [System.Drawing.Brushes]::Black
-	      $graphics = [System.Drawing.Graphics]::FromImage($edit)
-	      $graphics.FillRectangle($color, 0, 0, $edit.Width, $edit.Height)
-	      $graphics.Dispose()
-	      $edit.Save($file)
-	      $edit.Dispose()
-	      # set image settings
-	      reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\PersonalizationCSP" /v "LockScreenImagePath" /t REG_SZ /d "C:\Windows\Black.jpg" /f | Out-Null
-	      reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\PersonalizationCSP" /v "LockScreenImageStatus" /t REG_DWORD /d "1" /f | Out-Null
+				# import reg file
+	            Set-Content -Path "$env:TEMP\Edge.reg" -Value $MultilineComment -Force	
+	            Regedit.exe /S "$env:TEMP\Edge.reg"
+		        Timeout /T 1 | Out-Null
+	            # disable edge tasks
+	            Get-ScheduledTask | Where-Object { $_.TaskName -like "*Edge*" } | ForEach-Object { Disable-ScheduledTask -TaskName $_.TaskName | Out-Null }
+                
+	            # Signout Lockscreen
+	            # create new image
+	            Add-Type -AssemblyName System.Windows.Forms
+	            $screenWidth = [System.Windows.Forms.SystemInformation]::PrimaryMonitorSize.Width
+	            $screenHeight = [System.Windows.Forms.SystemInformation]::PrimaryMonitorSize.Height
+	            Add-Type -AssemblyName System.Drawing
+	            $file = "C:\Windows\Black.jpg"
+	            $edit = New-Object System.Drawing.Bitmap $screenWidth, $screenHeight
+	            $color = [System.Drawing.Brushes]::Black
+	            $graphics = [System.Drawing.Graphics]::FromImage($edit)
+	            $graphics.FillRectangle($color, 0, 0, $edit.Width, $edit.Height)
+	            $graphics.Dispose()
+	            $edit.Save($file)
+	            $edit.Dispose()
+	            # set image settings
+	            reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\PersonalizationCSP" /v "LockScreenImagePath" /t REG_SZ /d "C:\Windows\Black.jpg" /f | Out-Null
+	            reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\PersonalizationCSP" /v "LockScreenImageStatus" /t REG_DWORD /d "1" /f | Out-Null
 
 				# CLEAN TASKBAR
 				# unpin all taskbar icons
@@ -2802,8 +2801,8 @@ Windows Registry Editor Version 5.00
 				    }
 				
 				# group svchost.exe processes
-			  $ram = (Get-CimInstance -ClassName Win32_PhysicalMemory | Measure-Object -Property Capacity -Sum).Sum / 1kb
-			  Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control" -Name "SvcHostSplitThresholdInKB" -Type DWord -Value $ram -Force
+				$ram = (Get-CimInstance -ClassName Win32_PhysicalMemory | Measure-Object -Property Capacity -Sum).Sum / 1kb
+				Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control" -Name "SvcHostSplitThresholdInKB" -Type DWord -Value $ram -Force
 			
 				# enable msi mode on all supported display drivers
 				# get all gpu driver ids
@@ -2826,36 +2825,36 @@ Windows Registry Editor Version 5.00
 				# set account passwords to never expire
 				Get-LocalUser | ForEach-Object { Set-LocalUser -Name $_.Name -PasswordNeverExpires $true | Out-Null }
 
-	      # Prevent Print Spooler to start automatically with windows
-	      Set-ItemProperty -Path 'HKLM:\SYSTEM\ControlSet001\Services\Spooler' -Name 'Start' -Value 3
+				# Prevent Print Spooler to start automatically with windows
+	            Set-ItemProperty -Path 'HKLM:\SYSTEM\ControlSet001\Services\Spooler' -Name 'Start' -Value 3
+                
+	            # Disable Windows Search Indexing
+	            Set-ItemProperty -Path 'HKLM:\SYSTEM\ControlSet001\Services\WSearch' -Name 'Start' -Value 4
+                
+	            # Create System Properties Start menu shortcut
+	            $t="$env:ProgramData\Microsoft\Windows\Start Menu\Programs\Administrative Tools\System Properties.lnk"
+	            $s=(New-Object -ComObject WScript.Shell).CreateShortcut($t)
+	            $s.TargetPath="$env:SystemRoot\System32\SystemPropertiesAdvanced.exe"
+	            $s.IconLocation="$env:SystemRoot\System32\SystemPropertiesAdvanced.exe"
+	            $s.Save() >$null 2>&1
 
-	      # Disable Windows Search Indexing
-	      Set-ItemProperty -Path 'HKLM:\SYSTEM\ControlSet001\Services\WSearch' -Name 'Start' -Value 4
+				# DISABLE TASKS
+				# disable OneDrive and Edge scheduled tasks
+				Get-ScheduledTask | Where-Object { $_.TaskName -like "*OneDrive*" -or $_.TaskName -like "*Edge*" } | ForEach-Object { Disable-ScheduledTask -TaskName $_.TaskName | Out-Null }
+				# disable automatic disk defragmentation
+				schtasks /Change /DISABLE /TN "\Microsoft\Windows\Defrag\ScheduledDefrag" | Out-Null	
+				# disable security scheduled tasks
+				schtasks /Change /TN "Microsoft\Windows\ExploitGuard\ExploitGuard MDM policy Refresh" /Disable | Out-Null
+				schtasks /Change /TN "Microsoft\Windows\Windows Defender\Windows Defender Cache Maintenance" /Disable | Out-Null
+				schtasks /Change /TN "Microsoft\Windows\Windows Defender\Windows Defender Cleanup" /Disable | Out-Null
+				schtasks /Change /TN "Microsoft\Windows\Windows Defender\Windows Defender Scheduled Scan" /Disable | Out-Null
+				schtasks /Change /TN "Microsoft\Windows\Windows Defender\Windows Defender Verification" /Disable | Out-Null
+		
+				# Windows 10 Stuff
+				if ((Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion').CurrentBuild -le 19045) {
 
-	      # Create System Properties Start menu shortcut
-	      $t="$env:ProgramData\Microsoft\Windows\Start Menu\Programs\Administrative Tools\System Properties.lnk"
-	      $s=(New-Object -ComObject WScript.Shell).CreateShortcut($t)
-	      $s.TargetPath="$env:SystemRoot\System32\SystemPropertiesAdvanced.exe"
-	      $s.IconLocation="$env:SystemRoot\System32\SystemPropertiesAdvanced.exe"
-	      $s.Save() >$null 2>&1
-
-			  # DISABLE TASKS
-        # disable OneDrive and Edge scheduled tasks
-        Get-ScheduledTask | Where-Object { $_.TaskName -like "*OneDrive*" -or $_.TaskName -like "*Edge*" } | ForEach-Object { Disable-ScheduledTask -TaskName $_.TaskName | Out-Null }
-        # disable automatic disk defragmentation
-        schtasks /Change /DISABLE /TN "\Microsoft\Windows\Defrag\ScheduledDefrag" | Out-Null	
-        # disable security scheduled tasks
-        schtasks /Change /TN "Microsoft\Windows\ExploitGuard\ExploitGuard MDM policy Refresh" /Disable | Out-Null
-        schtasks /Change /TN "Microsoft\Windows\Windows Defender\Windows Defender Cache Maintenance" /Disable | Out-Null
-        schtasks /Change /TN "Microsoft\Windows\Windows Defender\Windows Defender Cleanup" /Disable | Out-Null
-        schtasks /Change /TN "Microsoft\Windows\Windows Defender\Windows Defender Scheduled Scan" /Disable | Out-Null
-        schtasks /Change /TN "Microsoft\Windows\Windows Defender\Windows Defender Verification" /Disable | Out-Null
-
-	      # Windows 10 Stuff
-	      if ((Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion').CurrentBuild -le 19045) {
-
-		      # Set Desktop Wallpaper and Style
-		      Add-Type @"
+					# Set Desktop Wallpaper and Style
+					Add-Type @"
 using System.Runtime.InteropServices;
 public class Wallpaper {
     public const int SPI_SETDESKWALLPAPER = 0x0014;
@@ -2865,23 +2864,24 @@ public class Wallpaper {
     public static extern int SystemParametersInfo(int uAction, int uParam, string lpvParam, int fuWinIni);
 }
 "@
-		      $WallpaperPath = "C:\Windows\web\wallpaper\Windows\img0.jpg"
-		      Set-ItemProperty "HKCU:\Control Panel\Desktop" -Name "WallpaperStyle" -Value "10"
-		      Set-ItemProperty "HKCU:\Control Panel\Desktop" -Name "TileWallpaper" -Value "0"
-		      [Wallpaper]::SystemParametersInfo(0x0014, 0, $WallpaperPath, 3) | Out-Null
 
-		      # Show Copy as Path always in right-click menu          
-		      $regPath = "Registry::HKEY_CLASSES_ROOT\AllFilesystemObjects\shell\windows.copyaspath"
-		      New-Item -Path $regPath -Force | Out-Null; Set-ItemProperty -Path $regPath -Name "(default)" -Value "Copy &as path" | Out-Null
-		      Set-ItemProperty -Path $regPath -Name "InvokeCommandOnSelection" -Value 1 -Type DWord | Out-Null
-		      Set-ItemProperty -Path $regPath -Name "VerbHandler" -Value "{f3d06e7c-1e45-4a26-847e-f9fcdee59be0}" | Out-Null
-		      Set-ItemProperty -Path $regPath -Name "VerbName" -Value "copyaspath" | Out-Null   		
-
-		      # CLEAN START MENU W10
-		      # delete startmenulayout.xml
-		      Remove-Item -Recurse -Force "$env:SystemDrive\Windows\StartMenuLayout.xml" -ErrorAction SilentlyContinue | Out-Null
-		      # create startmenulayout.xml
-		      $MultilineComment = @'
+					$WallpaperPath = "C:\Windows\web\wallpaper\Windows\img0.jpg"
+					Set-ItemProperty "HKCU:\Control Panel\Desktop" -Name "WallpaperStyle" -Value "10"
+					Set-ItemProperty "HKCU:\Control Panel\Desktop" -Name "TileWallpaper" -Value "0"
+					[Wallpaper]::SystemParametersInfo(0x0014, 0, $WallpaperPath, 3) | Out-Null
+					
+					# Show Copy as Path always in right-click menu          
+					$regPath = "Registry::HKEY_CLASSES_ROOT\AllFilesystemObjects\shell\windows.copyaspath"
+					New-Item -Path $regPath -Force | Out-Null; Set-ItemProperty -Path $regPath -Name "(default)" -Value "Copy &as path" | Out-Null
+					Set-ItemProperty -Path $regPath -Name "InvokeCommandOnSelection" -Value 1 -Type DWord | Out-Null
+					Set-ItemProperty -Path $regPath -Name "VerbHandler" -Value "{f3d06e7c-1e45-4a26-847e-f9fcdee59be0}" | Out-Null
+					Set-ItemProperty -Path $regPath -Name "VerbName" -Value "copyaspath" | Out-Null   		
+					
+					# CLEAN START MENU W10
+					# delete startmenulayout.xml
+					Remove-Item -Recurse -Force "$env:SystemDrive\Windows\StartMenuLayout.xml" -ErrorAction SilentlyContinue | Out-Null
+					# create startmenulayout.xml
+					$MultilineComment = @'
 <LayoutModificationTemplate xmlns:defaultlayout="http://schemas.microsoft.com/Start/2014/FullDefaultLayout" xmlns:start="http://schemas.microsoft.com/Start/2014/StartLayout" Version="1" xmlns:taskbar="http://schemas.microsoft.com/Start/2014/TaskbarLayout" xmlns="http://schemas.microsoft.com/Start/2014/LayoutModification">
 	<LayoutOptions StartTileGroupCellWidth="6" />
 	<DefaultLayoutOverride>
@@ -2891,37 +2891,38 @@ public class Wallpaper {
 	</DefaultLayoutOverride>
 </LayoutModificationTemplate>
 '@
-		      Set-Content -Path "C:\Windows\StartMenuLayout.xml" -Value $MultilineComment -Force -Encoding ASCII   	
-		      # assign startmenulayout.xml registry
-		      $layoutFile="C:\Windows\StartMenuLayout.xml"
-		      $regAliases = @("HKLM", "HKCU")
-		      foreach ($regAlias in $regAliases){
-		      $basePath = $regAlias + ":\SOFTWARE\Policies\Microsoft\Windows"		
-		      $keyPath = $basePath + "\Explorer"		
-		      IF(!(Test-Path -Path $keyPath)) { New-Item -Path $basePath -Name "Explorer" | Out-Null }			
-		      Set-ItemProperty -Path $keyPath -Name "LockedStartLayout" -Value 1 | Out-Null		
-		      Set-ItemProperty -Path $keyPath -Name "StartLayoutFile" -Value $layoutFile | Out-Null		
-		      }
-		      Stop-Process -Force -Name explorer -ErrorAction SilentlyContinue | Out-Null	
-		      Timeout /T 5 | Out-Null
-		      # disable lockedstartlayout registry		
-		      foreach ($regAlias in $regAliases){		
-		      $basePath = $regAlias + ":\SOFTWARE\Policies\Microsoft\Windows"		
-		      $keyPath = $basePath + "\Explorer"		
-		      Set-ItemProperty -Path $keyPath -Name "LockedStartLayout" -Value 0 | Out-Null		
-		      }
-		      # restart explorer
-		      Stop-Process -Force -Name explorer -ErrorAction SilentlyContinue | Out-Null
-		      # delete startmenulayout.xml
-		      Remove-Item -Recurse -Force "$env:SystemDrive\Windows\StartMenuLayout.xml" -ErrorAction SilentlyContinue | Out-Null
 
-	      }
+					Set-Content -Path "C:\Windows\StartMenuLayout.xml" -Value $MultilineComment -Force -Encoding ASCII   	
+					# assign startmenulayout.xml registry
+					$layoutFile="C:\Windows\StartMenuLayout.xml"
+					$regAliases = @("HKLM", "HKCU")
+					foreach ($regAlias in $regAliases){
+					$basePath = $regAlias + ":\SOFTWARE\Policies\Microsoft\Windows"		
+					$keyPath = $basePath + "\Explorer"		
+					IF(!(Test-Path -Path $keyPath)) { New-Item -Path $basePath -Name "Explorer" | Out-Null }			
+					Set-ItemProperty -Path $keyPath -Name "LockedStartLayout" -Value 1 | Out-Null		
+					Set-ItemProperty -Path $keyPath -Name "StartLayoutFile" -Value $layoutFile | Out-Null		
+					}
+					Stop-Process -Force -Name explorer -ErrorAction SilentlyContinue | Out-Null	
+					Timeout /T 5 | Out-Null
+					# disable lockedstartlayout registry		
+					foreach ($regAlias in $regAliases){		
+					$basePath = $regAlias + ":\SOFTWARE\Policies\Microsoft\Windows"		
+					$keyPath = $basePath + "\Explorer"		
+					Set-ItemProperty -Path $keyPath -Name "LockedStartLayout" -Value 0 | Out-Null		
+					}
+					# restart explorer
+					Stop-Process -Force -Name explorer -ErrorAction SilentlyContinue | Out-Null
+					# delete startmenulayout.xml
+					Remove-Item -Recurse -Force "$env:SystemDrive\Windows\StartMenuLayout.xml" -ErrorAction SilentlyContinue | Out-Null
 
-	      # Windows 11 Stuff
-	      elseif ((Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion').CurrentBuild -ge 22000) {
+				}
 
-		      # Set Desktop Wallpaper and Style
-          Add-Type @"
+				# Windows 11 Stuff
+				elseif ((Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion').CurrentBuild -ge 22000) {
+
+					# Set Desktop Wallpaper and Style
+					Add-Type @"
 using System.Runtime.InteropServices;
 public class Wallpaper {
     public const int SPI_SETDESKWALLPAPER = 0x0014;
@@ -2931,43 +2932,45 @@ public class Wallpaper {
     public static extern int SystemParametersInfo(int uAction, int uParam, string lpvParam, int fuWinIni);
 }
 "@
-		      $WallpaperPath = "C:\Windows\web\Wallpaper\Windows\img19.jpg"
-		      Set-ItemProperty "HKCU:\Control Panel\Desktop" -Name "WallpaperStyle" -Value "10"
-		      Set-ItemProperty "HKCU:\Control Panel\Desktop" -Name "TileWallpaper" -Value "0"
-		      [Wallpaper]::SystemParametersInfo(0x0014, 0, $WallpaperPath, 3) | Out-Null
-	
-   		    # Hide the recommended section in the Start menu. This will also change the start menu layout to More pins
-		      New-Item -Path "HKLM:\SOFTWARE\Microsoft\PolicyManager\current\device\Start" -Force | Out-Null
-		      Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\PolicyManager\current\device\Start" -Name "HideRecommendedSection" -Value 1 -Type DWord | Out-Null
-		      New-Item -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\Explorer" -Force | Out-Null
-		      Set-ItemProperty -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\Explorer" -Name "HideRecommendedSection" -Value 1 -Type DWord | Out-Null
-		      New-Item -Path "HKLM:\SOFTWARE\Microsoft\PolicyManager\current\device\Education" -Force | Out-Null
-		      Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\PolicyManager\current\device\Education" -Name "IsEducationEnvironment" -Value 1 -Type DWord | Out-Null
 
-		      # CLEAN START MENU W11
-		      # Remove all pinned apps from Start https://github.com/Raphire/Win11Debloat/tree/refs/heads/master/Assets/Start				
-		      Get-Process StartMenuExperienceHost | Stop-Process -Force | Out-Null
-		      Start-Sleep -Milliseconds 200
-		      $dst="$env:LOCALAPPDATA\Packages\Microsoft.Windows.StartMenuExperienceHost_cw5n1h2txyewy\LocalState\start2.bin"		
-		      if (!(Test-Path (Split-Path $dst))){New-Item -Path (Split-Path $dst) -ItemType Directory -Force}  		
-		      Invoke-WebRequest -Uri 'https://github.com/Raphire/Win11Debloat/raw/refs/heads/master/Assets/Start/start2.bin' -OutFile $dst -UseBasicParsing
+					$WallpaperPath = "C:\Windows\web\Wallpaper\Windows\img19.jpg"
+				    Set-ItemProperty "HKCU:\Control Panel\Desktop" -Name "WallpaperStyle" -Value "10"
+				    Set-ItemProperty "HKCU:\Control Panel\Desktop" -Name "TileWallpaper" -Value "0"
+				    [Wallpaper]::SystemParametersInfo(0x0014, 0, $WallpaperPath, 3) | Out-Null
+		            
+				    # Hide the recommended section in the Start menu. This will also change the start menu layout to More pins
+				    New-Item -Path "HKLM:\SOFTWARE\Microsoft\PolicyManager\current\device\Start" -Force | Out-Null
+				    Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\PolicyManager\current\device\Start" -Name "HideRecommendedSection" -Value 1 -Type DWord | Out-Null
+				    New-Item -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\Explorer" -Force | Out-Null
+				    Set-ItemProperty -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\Explorer" -Name "HideRecommendedSection" -Value 1 -Type DWord | Out-Null
+				    New-Item -Path "HKLM:\SOFTWARE\Microsoft\PolicyManager\current\device\Education" -Force | Out-Null
+				    Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\PolicyManager\current\device\Education" -Name "IsEducationEnvironment" -Value 1 -Type DWord | Out-Null
 
-        }else{Write-Host $_.Exception.Message -ForegroundColor Red}
+					# CLEAN START MENU W11
+					<#
+					# Remove all pinned apps from Start https://github.com/Raphire/Win11Debloat/tree/refs/heads/master/Assets/Start				
+					Get-Process StartMenuExperienceHost | Stop-Process -Force | Out-Null
+					Start-Sleep -Milliseconds 200
+					$dst="$env:LOCALAPPDATA\Packages\Microsoft.Windows.StartMenuExperienceHost_cw5n1h2txyewy\LocalState\start2.bin"		
+					if (!(Test-Path (Split-Path $dst))){New-Item -Path (Split-Path $dst) -ItemType Directory -Force}  		
+					Invoke-WebRequest -Uri 'https://github.com/Raphire/Win11Debloat/raw/refs/heads/master/Assets/Start/start2.bin' -OutFile $dst -UseBasicParsing
+					#>
+				}else{Write-Host $_.Exception.Message -ForegroundColor Red}
 
-	      Stop-Process -Force -Name explorer -ErrorAction SilentlyContinue | Out-Null
+				Stop-Process -Force -Name explorer -ErrorAction SilentlyContinue | Out-Null
 
-        Clear-Host
-        Write-Host "Restart to apply . . ."
-        $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
-        exit
+				Clear-Host
+				Write-Host "Restart to apply . . ."
+				$null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+				exit
 
-      }
-    2 {
+			}
+			2 {
 
-        Clear-Host
-        Write-Host "Registry: Default . . ."
-        # create reg file
-        $MultilineComment = @"
+				Clear-Host
+				Write-Host "Registry: Default . . ."
+				# create reg file
+				$MultilineComment = @"
 Windows Registry Editor Version 5.00
 
 ; --LEGACY CONTROL PANEL--
@@ -6862,38 +6865,41 @@ _dpctimeout"=-
 [HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\PowerShell\1\ShellIds\Microsoft.PowerShell]
 "ExecutionPolicy"="Restricted"
 "@
-Set-Content -Path "$env:TEMP\Registry Defaults.reg" -Value $MultilineComment -Force
-# edit reg file
-$path = "$env:TEMP\Registry Defaults.reg"
-(Get-Content $path) -replace "\?","$" | Out-File $path
 
-	# Default signout Lockscreen
-	# delete image
-	Remove-Item -Recurse -Force "C:\Windows\Black.jpg" | Out-Null
-	# revert image settings
-	cmd /c "reg delete `"HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\PersonalizationCSP`" /f >nul 2>&1"
+				Set-Content -Path "$env:TEMP\Registry Defaults.reg" -Value $MultilineComment -Force
+				# edit reg file
+				$path = "$env:TEMP\Registry Defaults.reg"
+				(Get-Content $path) -replace "\?","$" | Out-File $path
 
-	# Disable MSI Mode
-	# get all gpu driver ids
-	$gpuDevices = Get-PnpDevice -Class Display
-	foreach ($gpu in $gpuDevices) {
-		$instanceID = $gpu.InstanceId
-		# disable msi mode for all gpus regedit
-		reg add "HKLM\SYSTEM\ControlSet001\Enum\$instanceID\Device Parameters\Interrupt Management\MessageSignaledInterruptProperties" /v "MSISupported" /t REG_DWORD /d "0" /f | Out-Null
-	}
-
-	# enable optimize drives
-	schtasks /Change /ENABLE /TN "\Microsoft\Windows\Defrag\ScheduledDefrag" | Out-Null
-
-	# set account password to expire
-  Get-LocalUser | ForEach-Object { Set-LocalUser -Name $_.Name -PasswordNeverExpires $false | Out-Null }
+				# Default signout Lockscreen
+                # delete image
+                Remove-Item -Recurse -Force "C:\Windows\Black.jpg" | Out-Null
+                # revert image settings
+                cmd /c "reg delete `"HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\PersonalizationCSP`" /f >nul 2>&1"
+                
+                # Disable MSI Mode
+                # get all gpu driver ids
+                $gpuDevices = Get-PnpDevice -Class Display
+                foreach ($gpu in $gpuDevices) {
+                	$instanceID = $gpu.InstanceId
+                	# disable msi mode for all gpus regedit
+                	reg add "HKLM\SYSTEM\ControlSet001\Enum\$instanceID\Device Parameters\Interrupt Management\MessageSignaledInterruptProperties" /v "MSISupported" /t REG_DWORD /d "0" /f | Out-Null
+                }
+                
+                # enable optimize drives
+                schtasks /Change /ENABLE /TN "\Microsoft\Windows\Defrag\ScheduledDefrag" | Out-Null
+                
+                # set account password to expire
+                Get-LocalUser | ForEach-Object { Set-LocalUser -Name $_.Name -PasswordNeverExpires $false | Out-Null }
 	
-# import reg file
-Regedit.exe /S "$env:TEMP\Registry Defaults.reg"
-Clear-Host
-Write-Host "Restart to apply . . ."
-$null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
-exit
-
-      }
-    } } else { Write-Host "Invalid input. Please select a valid option (1-2)." } }
+				# import reg file
+				Regedit.exe /S "$env:TEMP\Registry Defaults.reg"
+				Clear-Host
+				Write-Host "Restart to apply . . ."
+				$null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+				exit
+				
+			}
+		} 
+	} else { Write-Host "Invalid input. Please select a valid option (1-2)." } 
+}
