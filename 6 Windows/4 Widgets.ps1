@@ -49,7 +49,10 @@
     switch ($choice) {
     1 {
 
-Clear-Host
+		Clear-Host
+		$ProgressPreference = 'SilentlyContinue'  
+		$ErrorActionPreference = 'SilentlyContinue'
+
 # disable widgets regedit
 reg add "HKLM\SOFTWARE\Microsoft\PolicyManager\default\NewsAndInterests\AllowNewsAndInterests" /v "value" /t REG_DWORD /d "0" /f | Out-Null
 # remove windows widgets from taskbar regedit
