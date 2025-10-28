@@ -73,19 +73,28 @@ Timeout /T 2 | Out-Null
 # install heif image extension needed for some files
 Get-AppXPackage -AllUsers *Microsoft.HEIFImageExtension* | ForEach-Object {Add-AppxPackage -DisableDevelopmentMode -Register -ErrorAction SilentlyContinue "$($_.InstallLocation)\AppXManifest.xml"}
 Timeout /T 2 | Out-Null
-# install paint w11
-Get-AppXPackage -AllUsers *Microsoft.Paint* | ForEach-Object {Add-AppxPackage -DisableDevelopmentMode -Register -ErrorAction SilentlyContinue "$($_.InstallLocation)\AppXManifest.xml"}
-Timeout /T 2 | Out-Null
-# install photos
-Get-AppXPackage -AllUsers *Microsoft.Windows.Photos* | ForEach-Object {Add-AppxPackage -DisableDevelopmentMode -Register -ErrorAction SilentlyContinue "$($_.InstallLocation)\AppXManifest.xml"}
+# install photo viewer
+'tif','tiff','bmp','dib','gif','jfif','jpe','jpeg','jpg','jxr','png','ico'|ForEach-Object{
+    reg add "HKLM\SOFTWARE\Microsoft\Windows Photo Viewer\Capabilities\FileAssociations" /v ".${_}" /t REG_SZ /d "PhotoViewer.FileAssoc.Tiff" /f >$null 2>&1
+    reg add "HKCU\SOFTWARE\Classes\.${_}" /ve /t REG_SZ /d "PhotoViewer.FileAssoc.Tiff" /f >$null 2>&1
+}
 Timeout /T 2 | Out-Null
 # install notepad w11
-Get-AppXPackage -AllUsers *Microsoft.WindowsNotepad* | ForEach-Object {Add-AppxPackage -DisableDevelopmentMode -Register -ErrorAction SilentlyContinue "$($_.InstallLocation)\AppXManifest.xml"}
+if ((Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion').CurrentBuild -ge 22000){
+    # create notepad start menu shortcut
+    $shell = New-Object -ComObject WScript.Shell
+    $shortcut = $shell.CreateShortcut("C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Accessories\Notepad.lnk")
+    $shortcut.TargetPath = "$env:SystemRoot\System32\notepad.exe"
+    $shortcut.Save()
+    # restore new text document context menu item
+    Invoke-WebRequest -Uri "https://github.com/vishnusai-karumuri/Registry-Fixes/raw/refs/heads/master/Restore_New_Text_Document_context_menu_item.reg" -OutFile "$env:TEMP\Restore_New_Text_Document_context_menu_item.reg"
+    Start-Process regedit.exe -ArgumentList "/s `"$env:TEMP\Restore_New_Text_Document_context_menu_item.reg`"" -Wait	
+}else{Write-Host $_.Exception.Message -ForegroundColor Red}
 Timeout /T 2 | Out-Null
-Clear-Host
+
 Write-Host "Uninstalling: UWP Features. Please wait . . ."
 # uninstall all uwp features
-# network drivers, paint & notepad left out
+# network drivers, media player, paint & notepad left out
 Remove-WindowsCapability -Online -Name "App.StepsRecorder~~~~0.0.1.0" | Out-Null
 Remove-WindowsCapability -Online -Name "App.Support.QuickAssist~~~~0.0.1.0" | Out-Null
 Remove-WindowsCapability -Online -Name "Browser.InternetExplorer~~~~0.0.11.0" | Out-Null
@@ -93,7 +102,7 @@ Remove-WindowsCapability -Online -Name "DirectX.Configuration.Database~~~~0.0.1.
 Remove-WindowsCapability -Online -Name "Hello.Face.18967~~~~0.0.1.0" | Out-Null
 Remove-WindowsCapability -Online -Name "Hello.Face.20134~~~~0.0.1.0" | Out-Null
 Remove-WindowsCapability -Online -Name "MathRecognizer~~~~0.0.1.0" | Out-Null
-Remove-WindowsCapability -Online -Name "Media.WindowsMediaPlayer~~~~0.0.12.0" | Out-Null
+# Remove-WindowsCapability -Online -Name "Media.WindowsMediaPlayer~~~~0.0.12.0" | Out-Null
 Remove-WindowsCapability -Online -Name "Microsoft.Wallpapers.Extended~~~~0.0.1.0" | Out-Null
 Remove-WindowsCapability -Online -Name "Microsoft.Windows.MSPaint~~~~0.0.1.0" | Out-Null
 # Remove-WindowsCapability -Online -Name "Microsoft.Windows.Notepad.System~~~~0.0.1.0" | Out-Null
@@ -110,14 +119,17 @@ Remove-WindowsCapability -Online -Name "WMIC~~~~" | Out-Null
 # breaks uwp snippingtool w10
 # Remove-WindowsCapability -Online -Name "Windows.Client.ShellComponents~~~~0.0.1.0" | Out-Null
 Remove-WindowsCapability -Online -Name "Windows.Kernel.LA57~~~~0.0.1.0" | Out-Null
-Clear-Host
+# remove character map start shortcut
+Remove-Item "C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Accessories\System Tools\Character Map.lnk" -Force -ErrorAction SilentlyContinue | Out-Null
+
 Write-Host "Uninstalling: Legacy Features. Please wait . . ."
 # uninstall all legacy features
-# .net framework 4.8 advanced services left out
+# .net framework 4.8 advanced services and media features left out
 # Dism /Online /NoRestart /Disable-Feature /FeatureName:NetFx4-AdvSrvs | Out-Null
 Dism /Online /NoRestart /Disable-Feature /FeatureName:WCF-Services45 | Out-Null
 Dism /Online /NoRestart /Disable-Feature /FeatureName:WCF-TCP-PortSharing45 | Out-Null
-Dism /Online /NoRestart /Disable-Feature /FeatureName:MediaPlayback | Out-Null
+# media features
+# Dism /Online /NoRestart /Disable-Feature /FeatureName:MediaPlayback | Out-Null
 Dism /Online /NoRestart /Disable-Feature /FeatureName:Printing-PrintToPDFServices-Features | Out-Null
 Dism /Online /NoRestart /Disable-Feature /FeatureName:Printing-XPSServices-Features | Out-Null
 Dism /Online /NoRestart /Disable-Feature /FeatureName:Printing-Foundation-Features | Out-Null
@@ -133,7 +145,7 @@ Dism /Online /NoRestart /Disable-Feature /FeatureName:Windows-Identity-Foundatio
 Dism /Online /NoRestart /Disable-Feature /FeatureName:MicrosoftWindowsPowerShellV2Root | Out-Null
 Dism /Online /NoRestart /Disable-Feature /FeatureName:MicrosoftWindowsPowerShellV2 | Out-Null
 Dism /Online /NoRestart /Disable-Feature /FeatureName:WorkFolders-Client | Out-Null
-Clear-Host
+
 Write-Host "Uninstalling: Legacy Apps. Please wait . . ."
 # uninstall microsoft update health tools w11
 cmd /c "MsiExec.exe /X{C6FD611E-7EFE-488C-A0E0-974C09EF6473} /qn >nul 2>&1"
@@ -145,6 +157,11 @@ Unregister-ScheduledTask -TaskName PLUGScheduler -Confirm:$false -ErrorAction Si
 # uninstall update for windows 10 for x64-based systems
 cmd /c "MsiExec.exe /X{B9A7A138-BFD5-4C73-A269-F78CCA28150E} /qn >nul 2>&1"
 cmd /c "MsiExec.exe /X{85C69797-7336-4E83-8D97-32A7C8465A3B} /qn >nul 2>&1"
+# (KB5001716)
+cmd /c "MsiExec.exe /X{B8D93870-98D1-4980-AFCA-E26563CDFB79} /qn >nul 2>&1"
+# uninstall microsoft gameinput
+cmd /c "MsiExec.exe /X{F563DC73-9550-F772-B4BF-2F72C83F9F30} /qn >nul 2>&1"
+cmd /c "MsiExec.exe /X{0812546C-471E-E343-DE9C-AECF3D0137E6} /qn >nul 2>&1"
 # stop onedrive running
 Stop-Process -Force -Name OneDrive -ErrorAction SilentlyContinue | Out-Null
 # uninstall onedrive w10
@@ -155,11 +172,11 @@ Get-ScheduledTask | Where-Object {$_.Taskname -match 'OneDrive'} | Unregister-Sc
 cmd /c "C:\Windows\System32\OneDriveSetup.exe -uninstall >nul 2>&1"
 # clean adobe type manager w10
 cmd /c "reg delete `"HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Font Drivers`" /f >nul 2>&1"
+
 # uninstall old snippingtool w10
 Start-Process "C:\Windows\System32\SnippingTool.exe" -ArgumentList "/Uninstall"
-Clear-Host
 # silent window for old snippingtool w10
-$processExists = Get-Process -Name SnippingTool -ErrorAction SilentlyContinue
+$processExists = Get-Process -Name SnippingTool -ErrorAction SilentlyContinue 	
 if ($processExists) {
 $running = $true
 do {
@@ -174,24 +191,66 @@ $running = $false
 } else {
 }
 Timeout /T 1 | Out-Null
+Write-Host "Start Menu Taskbar: Clean . . ."
+# CLEAN TASKBAR
+# unpin all taskbar icons
+cmd /c "reg delete HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Taskband /f >nul 2>&1"
+Remove-Item -Recurse -Force "$env:USERPROFILE\AppData\Roaming\Microsoft\Internet Explorer\Quick Launch" -ErrorAction SilentlyContinue | Out-Null
+New-Item -Path "$env:USERPROFILE\AppData\Roaming\Microsoft\Internet Explorer" -Name "Quick Launch" -ItemType Directory -ErrorAction SilentlyContinue | Out-Null
+New-Item -Path "$env:USERPROFILE\AppData\Roaming\Microsoft\Internet Explorer\Quick Launch" -Name "User Pinned" -ItemType Directory -ErrorAction SilentlyContinue | Out-Null
+New-Item -Path "$env:USERPROFILE\AppData\Roaming\Microsoft\Internet Explorer\Quick Launch\User Pinned" -Name "TaskBar" -ItemType Directory -ErrorAction SilentlyContinue | Out-Null
+New-Item -Path "$env:USERPROFILE\AppData\Roaming\Microsoft\Internet Explorer\Quick Launch\User Pinned" -Name "ImplicitAppShortcuts" -ItemType Directory -ErrorAction SilentlyContinue | Out-Null
+# CLEAN START MENU W11
+if ((Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion').CurrentBuild -ge 22000) {
+# Remove all pinned apps from Start https://github.com/Raphire/Win11Debloat/tree/refs/heads/master/Assets/Start				
+Get-Process StartMenuExperienceHost | Stop-Process -Force | Out-Null
+Start-Sleep -Milliseconds 200		
+$dst="$env:LOCALAPPDATA\Packages\Microsoft.Windows.StartMenuExperienceHost_cw5n1h2txyewy\LocalState\start2.bin"		
+if (!(Test-Path (Split-Path $dst))){New-Item -Path (Split-Path $dst) -ItemType Directory -Force}  		
+Invoke-WebRequest -Uri 'https://github.com/Raphire/Win11Debloat/raw/refs/heads/master/Assets/Start/start2.bin' -OutFile $dst -UseBasicParsing  		
+}
+# CLEAN START MENU W10
+elseif ((Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion').CurrentBuild -le 19045) {
+# delete startmenulayout.xml
+Remove-Item -Recurse -Force "$env:SystemDrive\Windows\StartMenuLayout.xml" -ErrorAction SilentlyContinue | Out-Null
+# create startmenulayout.xml
+$MultilineComment = @'
+<LayoutModificationTemplate xmlns:defaultlayout="http://schemas.microsoft.com/Start/2014/FullDefaultLayout" xmlns:start="http://schemas.microsoft.com/Start/2014/StartLayout" Version="1" xmlns:taskbar="http://schemas.microsoft.com/Start/2014/TaskbarLayout" xmlns="http://schemas.microsoft.com/Start/2014/LayoutModification">
+	<LayoutOptions StartTileGroupCellWidth="6" />
+	<DefaultLayoutOverride>
+		<StartLayoutCollection>
+			<defaultlayout:StartLayout GroupCellWidth="6" />
+		</StartLayoutCollection>
+	</DefaultLayoutOverride>
+</LayoutModificationTemplate>
+'@
+Set-Content -Path "C:\Windows\StartMenuLayout.xml" -Value $MultilineComment -Force -Encoding ASCII		
+# assign startmenulayout.xml registry
+$layoutFile="C:\Windows\StartMenuLayout.xml"
+$regAliases = @("HKLM", "HKCU")
+foreach ($regAlias in $regAliases){
+$basePath = $regAlias + ":\SOFTWARE\Policies\Microsoft\Windows"		
+$keyPath = $basePath + "\Explorer"		
+IF(!(Test-Path -Path $keyPath)) { New-Item -Path $basePath -Name "Explorer" | Out-Null }			
+Set-ItemProperty -Path $keyPath -Name "LockedStartLayout" -Value 1 | Out-Null		
+Set-ItemProperty -Path $keyPath -Name "StartLayoutFile" -Value $layoutFile | Out-Null		
+}
+Stop-Process -Force -Name explorer -ErrorAction SilentlyContinue | Out-Null	
+Timeout /T 5 | Out-Null
+# disable lockedstartlayout registry		
+foreach ($regAlias in $regAliases){		
+$basePath = $regAlias + ":\SOFTWARE\Policies\Microsoft\Windows"		
+$keyPath = $basePath + "\Explorer"		
+Set-ItemProperty -Path $keyPath -Name "LockedStartLayout" -Value 0 | Out-Null		
+}
+# restart explorer
+Stop-Process -Force -Name explorer -ErrorAction SilentlyContinue | Out-Null
+# delete startmenulayout.xml
+Remove-Item -Recurse -Force "$env:SystemDrive\Windows\StartMenuLayout.xml" -ErrorAction SilentlyContinue | Out-Null
+}else{Write-Host $_.Exception.Message -ForegroundColor Red}
+pause
 # uninstall remote desktop connection
 Start-Process "mstsc" -ArgumentList "/Uninstall"
-Clear-Host
-# silent window for remote desktop connection
-$processExists = Get-Process -Name mstsc -ErrorAction SilentlyContinue
-if ($processExists) {
-$running = $true
-do {
-$openWindows = Get-Process | Where-Object { $_.MainWindowTitle -ne '' } | Select-Object MainWindowTitle
-foreach ($window in $openWindows) {
-if ($window.MainWindowTitle -eq 'Remote Desktop Connection') {
-Stop-Process -Force -Name mstsc -ErrorAction SilentlyContinue | Out-Null
-$running = $false
-}
-}
-} while ($running)
-} else {
-}
 Clear-Host
 Write-Host "Restart to apply . . ."
 $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
@@ -200,16 +259,44 @@ show-menu
       }
     2 {
 
-Clear-Host
-$progresspreference = 'silentlycontinue'
-Write-Host "Installing: Store. Please wait . . ."
-# install store
-Get-AppXPackage -AllUsers *Microsoft.WindowsStore* | ForEach-Object {Add-AppxPackage -DisableDevelopmentMode -Register -ErrorAction SilentlyContinue "$($_.InstallLocation)\AppXManifest.xml"}
-Get-AppXPackage -AllUsers *Microsoft.Microsoft.StorePurchaseApp * | ForEach-Object {Add-AppxPackage -DisableDevelopmentMode -Register -ErrorAction SilentlyContinue "$($_.InstallLocation)\AppXManifest.xml"}
-Clear-Host
-Write-Host "Restart to apply . . ."
-$null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
-show-menu
+        Clear-Host
+        $progresspreference = 'silentlycontinue'
+        Write-Host "Installing: Store. Please wait . . ."
+        # install store
+        Get-AppXPackage -AllUsers *Microsoft.WindowsStore* | ForEach-Object {Add-AppxPackage -DisableDevelopmentMode -Register -ErrorAction SilentlyContinue "$($_.InstallLocation)\AppXManifest.xml"}
+        Get-AppXPackage -AllUsers *Microsoft.Microsoft.StorePurchaseApp * | ForEach-Object {Add-AppxPackage -DisableDevelopmentMode -Register -ErrorAction SilentlyContinue "$($_.InstallLocation)\AppXManifest.xml"}
+	    # enable Microsoft Account Sign-in Assistant
+	$batchCode = @'
+@echo off
+:: https://privacy.sexy — v0.13.8 — Sun, 19 Oct 2025 08:43:23 GMT
+:: Initialize environment
+setlocal EnableExtensions DisableDelayedExpansion
+
+
+:: Disable Microsoft Account Sign-in Assistant (breaks Microsoft Store and Microsoft Account sign-in) (revert)
+echo --- Disable Microsoft Account Sign-in Assistant (breaks Microsoft Store and Microsoft Account sign-in) (revert)
+:: Restore service(s) to default state: `wlidsvc`
+PowerShell -ExecutionPolicy Unrestricted -Command "$serviceName = 'wlidsvc'; $defaultStartupMode = 'Manual'; $ignoreMissingOnRevert =  $false; Write-Host "^""Reverting service `"^""$serviceName`"^"" start to `"^""$defaultStartupMode`"^""."^""; <# -- 1. Skip if service does not exist #>; $service = Get-Service -Name $serviceName -ErrorAction SilentlyContinue; if (!$service) { if ($ignoreMissingOnRevert) { Write-Output "^""Skipping: The service `"^""$serviceName`"^"" is not found. No action required."^""; Exit 0; }; Write-Warning "^""Failed to revert changes to the service `"^""$serviceName`"^"". The service is not found."^""; Exit 1; }; <# -- 2. Enable or skip if already enabled #>; $startupType = $service.StartType <# Does not work before .NET 4.6.1 #>; if (!$startupType) { $startupType = (Get-WmiObject -Query "^""Select StartMode From Win32_Service Where Name='$serviceName'"^"" -ErrorAction Ignore).StartMode; if (!$startupType) { $startupType = (Get-WmiObject -Class Win32_Service -Property StartMode -Filter "^""Name='$serviceName'"^"" -ErrorAction Ignore).StartMode; }; }; if ($startupType -eq "^""$defaultStartupMode"^"") { Write-Host "^""`"^""$serviceName`"^"" has already expected startup mode: `"^""$defaultStartupMode`"^"". No action required."^""; } else { try { Set-Service -Name "^""$serviceName"^"" -StartupType "^""$defaultStartupMode"^"" -Confirm:$false -ErrorAction Stop; Write-Host "^""Reverted `"^""$serviceName`"^"" with `"^""$defaultStartupMode`"^"" start, this may require restarting your computer."^""; } catch { Write-Error "^""Failed to enable `"^""$serviceName`"^"": $_"^""; Exit 1; }; }; <# -- 4. Start if not running (must be enabled first) #>; if ($defaultStartupMode -eq 'Automatic' -or $defaultStartupMode -eq 'Boot' -or $defaultStartupMode -eq 'System') { if ($service.Status -ne [System.ServiceProcess.ServiceControllerStatus]::Running) { Write-Host "^""`"^""$serviceName`"^"" is not running, starting it."^""; try { Start-Service $serviceName -ErrorAction Stop; Write-Host "^""Started `"^""$serviceName`"^"" successfully."^""; } catch { Write-Warning "^""Failed to start `"^""$serviceName`"^"", requires restart, it will be started after reboot.`r`n$_"^""; }; } else { Write-Host "^""`"^""$serviceName`"^"" is already running, no need to start."^""; }; }"
+:: ----------------------------------------------------------
+
+
+:: Restore previous environment settings
+endlocal
+'@
+	    $batPath = "$env:TEMP\EnableMSAccountSignInAssistant.bat"
+	    Set-Content -Path $batPath -Value $batchCode -Encoding ASCII
+	    Start-Process -FilePath $batPath -Wait -NoNewWindow | Out-Null
+
+        try {
+            # Open Phone Link App page
+            Start-Process "ms-windows-store://pdp/?ProductId=9NMPJ99VJBWV" -ErrorAction SilentlyContinue | Out-Null
+        }catch {
+            Clear-Host
+            Write-Host "Restart to apply . . ."
+            $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+        }
+        Clear-Host
+        show-menu
 
       }	  
     3 {
