@@ -51,7 +51,7 @@
 	Write-Host " 6. Install: One Drive"
     Write-Host " 7. Install: Remote Desktop Connection"
     Write-Host " 8. Install: Legacy Snipping Tool W10"
-	Write-Host " 9. Install: Legacy Paint W10"
+    Write-Host " 9. Install: Legacy Paint W10"
 		              }
 	show-menu
     while ($true) {
@@ -61,95 +61,37 @@
     1 {
 
 Clear-Host
+exit
+
+      }
+    1 {
+
+Clear-Host
 $progresspreference = 'silentlycontinue'
-Write-Host "Start Menu Taskbar: Clean . . ."
-# CLEAN TASKBAR
-# unpin all taskbar icons
-cmd /c "reg delete HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Taskband /f >nul 2>&1"
-Remove-Item -Recurse -Force "$env:USERPROFILE\AppData\Roaming\Microsoft\Internet Explorer\Quick Launch" -ErrorAction SilentlyContinue | Out-Null
-New-Item -Path "$env:USERPROFILE\AppData\Roaming\Microsoft\Internet Explorer" -Name "Quick Launch" -ItemType Directory -ErrorAction SilentlyContinue | Out-Null
-New-Item -Path "$env:USERPROFILE\AppData\Roaming\Microsoft\Internet Explorer\Quick Launch" -Name "User Pinned" -ItemType Directory -ErrorAction SilentlyContinue | Out-Null
-New-Item -Path "$env:USERPROFILE\AppData\Roaming\Microsoft\Internet Explorer\Quick Launch\User Pinned" -Name "TaskBar" -ItemType Directory -ErrorAction SilentlyContinue | Out-Null
-New-Item -Path "$env:USERPROFILE\AppData\Roaming\Microsoft\Internet Explorer\Quick Launch\User Pinned" -Name "ImplicitAppShortcuts" -ItemType Directory -ErrorAction SilentlyContinue | Out-Null
-# CLEAN START MENU W11
-if ((Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion').CurrentBuild -ge 22000) {
-# Remove all pinned apps from Start https://github.com/Raphire/Win11Debloat/tree/refs/heads/master/Assets/Start				
-Get-Process StartMenuExperienceHost | Stop-Process -Force | Out-Null
-Start-Sleep -Milliseconds 200		
-$dst="$env:LOCALAPPDATA\Packages\Microsoft.Windows.StartMenuExperienceHost_cw5n1h2txyewy\LocalState\start2.bin"		
-if (!(Test-Path (Split-Path $dst))){New-Item -Path (Split-Path $dst) -ItemType Directory -Force}  		
-Invoke-WebRequest -Uri 'https://github.com/Raphire/Win11Debloat/raw/refs/heads/master/Assets/Start/start2.bin' -OutFile $dst -UseBasicParsing  		
-}
-# CLEAN START MENU W10
-elseif ((Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion').CurrentBuild -le 19045) {
-# delete startmenulayout.xml
-Remove-Item -Recurse -Force "$env:SystemDrive\Windows\StartMenuLayout.xml" -ErrorAction SilentlyContinue | Out-Null
-# create startmenulayout.xml
-$MultilineComment = @'
-<LayoutModificationTemplate xmlns:defaultlayout="http://schemas.microsoft.com/Start/2014/FullDefaultLayout" xmlns:start="http://schemas.microsoft.com/Start/2014/StartLayout" Version="1" xmlns:taskbar="http://schemas.microsoft.com/Start/2014/TaskbarLayout" xmlns="http://schemas.microsoft.com/Start/2014/LayoutModification">
-	<LayoutOptions StartTileGroupCellWidth="6" />
-	<DefaultLayoutOverride>
-		<StartLayoutCollection>
-			<defaultlayout:StartLayout GroupCellWidth="6" />
-		</StartLayoutCollection>
-	</DefaultLayoutOverride>
-</LayoutModificationTemplate>
-'@
-Set-Content -Path "C:\Windows\StartMenuLayout.xml" -Value $MultilineComment -Force -Encoding ASCII		
-# assign startmenulayout.xml registry
-$layoutFile="C:\Windows\StartMenuLayout.xml"
-$regAliases = @("HKLM", "HKCU")
-foreach ($regAlias in $regAliases){
-$basePath = $regAlias + ":\SOFTWARE\Policies\Microsoft\Windows"		
-$keyPath = $basePath + "\Explorer"		
-IF(!(Test-Path -Path $keyPath)) { New-Item -Path $basePath -Name "Explorer" | Out-Null }			
-Set-ItemProperty -Path $keyPath -Name "LockedStartLayout" -Value 1 | Out-Null		
-Set-ItemProperty -Path $keyPath -Name "StartLayoutFile" -Value $layoutFile | Out-Null		
-}
-Stop-Process -Force -Name explorer -ErrorAction SilentlyContinue | Out-Null	
-Timeout /T 5 | Out-Null
-# disable lockedstartlayout registry		
-foreach ($regAlias in $regAliases){		
-$basePath = $regAlias + ":\SOFTWARE\Policies\Microsoft\Windows"		
-$keyPath = $basePath + "\Explorer"		
-Set-ItemProperty -Path $keyPath -Name "LockedStartLayout" -Value 0 | Out-Null		
-}
-# restart explorer
-Stop-Process -Force -Name explorer -ErrorAction SilentlyContinue | Out-Null
-# delete startmenulayout.xml
-Remove-Item -Recurse -Force "$env:SystemDrive\Windows\StartMenuLayout.xml" -ErrorAction SilentlyContinue | Out-Null
-Clear-Host	
-}
-else{Write-Host $_.Exception.Message -ForegroundColor Red}
 Write-Host "Uninstalling: UWP Apps. Please wait . . ."
 # uninstall all uwp apps keep nvidia & cbs
 # cbs needed for w11 explorer
 Get-AppXPackage -AllUsers | Where-Object { $_.Name -notlike '*NVIDIA*' -and $_.Name -notlike '*CBS*' } | Remove-AppxPackage -ErrorAction SilentlyContinue
 Timeout /T 2 | Out-Null
 # install hevc video extension needed for amd recording
-Get-AppXPackage -AllUsers *Microsoft.HEVCVideoExtension* | Foreach {Add-AppxPackage -DisableDevelopmentMode -Register -ErrorAction SilentlyContinue "$($_.InstallLocation)\AppXManifest.xml"}
+Get-AppXPackage -AllUsers *Microsoft.HEVCVideoExtension* | ForEach-Object {Add-AppxPackage -DisableDevelopmentMode -Register -ErrorAction SilentlyContinue "$($_.InstallLocation)\AppXManifest.xml"}
 Timeout /T 2 | Out-Null
 # install heif image extension needed for some files
-Get-AppXPackage -AllUsers *Microsoft.HEIFImageExtension* | Foreach {Add-AppxPackage -DisableDevelopmentMode -Register -ErrorAction SilentlyContinue "$($_.InstallLocation)\AppXManifest.xml"}
+Get-AppXPackage -AllUsers *Microsoft.HEIFImageExtension* | ForEach-Object {Add-AppxPackage -DisableDevelopmentMode -Register -ErrorAction SilentlyContinue "$($_.InstallLocation)\AppXManifest.xml"}
+Timeout /T 2 | Out-Null
+# install paint w11
+Get-AppXPackage -AllUsers *Microsoft.Paint* | ForEach-Object {Add-AppxPackage -DisableDevelopmentMode -Register -ErrorAction SilentlyContinue "$($_.InstallLocation)\AppXManifest.xml"}
+Timeout /T 2 | Out-Null
+# install photos
+Get-AppXPackage -AllUsers *Microsoft.Windows.Photos* | ForEach-Object {Add-AppxPackage -DisableDevelopmentMode -Register -ErrorAction SilentlyContinue "$($_.InstallLocation)\AppXManifest.xml"}
 Timeout /T 2 | Out-Null
 # install notepad w11
-if ((Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion').CurrentBuild -ge 22000){
-# create notepad start menu shortcut
-$shortcut = $shell.CreateShortcut("C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Accessories\Notepad.lnk")
-$shortcut.TargetPath = "$env:SystemRoot\System32\notepad.exe"
-$shortcut.Save()
-# restore new text document context menu item
-Invoke-WebRequest -Uri "https://github.com/vishnusai-karumuri/Registry-Fixes/raw/refs/heads/master/Restore_New_Text_Document_context_menu_item.reg" -OutFile "$env:TEMP\Restore_New_Text_Document_context_menu_item.reg"
-Start-Process regedit.exe -ArgumentList "/s `"$env:TEMP\Restore_New_Text_Document_context_menu_item.reg`"" -Wait	
-}else{Write-Host $_.Exception.Message -ForegroundColor Red}
-Timeout /T 2 | Out-Null
-# install photo viewer
-'tif','tiff','bmp','dib','gif','jfif','jpe','jpeg','jpg','jxr','png','ico'|ForEach-Object{reg add "HKLM\SOFTWARE\Microsoft\Windows Photo Viewer\Capabilities\FileAssociations" /v ".${_}" /t REG_SZ /d "PhotoViewer.FileAssoc.Tiff" /f >$null 2>&1;reg add "HKCU\SOFTWARE\Classes\.${_}" /ve /t REG_SZ /d "PhotoViewer.FileAssoc.Tiff" /f >$null 2>&1}
+Get-AppXPackage -AllUsers *Microsoft.WindowsNotepad* | ForEach-Object {Add-AppxPackage -DisableDevelopmentMode -Register -ErrorAction SilentlyContinue "$($_.InstallLocation)\AppXManifest.xml"}
 Timeout /T 2 | Out-Null
 Clear-Host
 Write-Host "Uninstalling: UWP Features. Please wait . . ."
 # uninstall all uwp features
-# network drivers, media player & notepad left out
+# network drivers, paint & notepad left out
 Remove-WindowsCapability -Online -Name "App.StepsRecorder~~~~0.0.1.0" | Out-Null
 Remove-WindowsCapability -Online -Name "App.Support.QuickAssist~~~~0.0.1.0" | Out-Null
 Remove-WindowsCapability -Online -Name "Browser.InternetExplorer~~~~0.0.11.0" | Out-Null
@@ -157,11 +99,8 @@ Remove-WindowsCapability -Online -Name "DirectX.Configuration.Database~~~~0.0.1.
 Remove-WindowsCapability -Online -Name "Hello.Face.18967~~~~0.0.1.0" | Out-Null
 Remove-WindowsCapability -Online -Name "Hello.Face.20134~~~~0.0.1.0" | Out-Null
 Remove-WindowsCapability -Online -Name "MathRecognizer~~~~0.0.1.0" | Out-Null
-# Remove-WindowsCapability -Online -Name "Media.WindowsMediaPlayer~~~~0.0.12.0" | Out-Null
+Remove-WindowsCapability -Online -Name "Media.WindowsMediaPlayer~~~~0.0.12.0" | Out-Null
 Remove-WindowsCapability -Online -Name "Microsoft.Wallpapers.Extended~~~~0.0.1.0" | Out-Null
-# Remove-WindowsCapability -Online -Name "Microsoft.Windows.Ethernet.Client.Intel.E1i68x64~~~~0.0.1.0" | Out-Null
-# Remove-WindowsCapability -Online -Name "Microsoft.Windows.Ethernet.Client.Intel.E2f68~~~~0.0.1.0" | Out-Null
-# Remove-WindowsCapability -Online -Name "Microsoft.Windows.Ethernet.Client.Realtek.Rtcx21x64~~~~0.0.1.0" | Out-Null
 Remove-WindowsCapability -Online -Name "Microsoft.Windows.MSPaint~~~~0.0.1.0" | Out-Null
 # Remove-WindowsCapability -Online -Name "Microsoft.Windows.Notepad.System~~~~0.0.1.0" | Out-Null
 # Remove-WindowsCapability -Online -Name "Microsoft.Windows.Notepad~~~~0.0.1.0" | Out-Null
@@ -177,8 +116,6 @@ Remove-WindowsCapability -Online -Name "WMIC~~~~" | Out-Null
 # breaks uwp snippingtool w10
 # Remove-WindowsCapability -Online -Name "Windows.Client.ShellComponents~~~~0.0.1.0" | Out-Null
 Remove-WindowsCapability -Online -Name "Windows.Kernel.LA57~~~~0.0.1.0" | Out-Null
-# remove character map
-Remove-Item "C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Accessories\System Tools\Character Map.lnk" -Force -ErrorAction SilentlyContinue | Out-Null
 Clear-Host
 Write-Host "Uninstalling: Legacy Features. Please wait . . ."
 # uninstall all legacy features
@@ -186,8 +123,7 @@ Write-Host "Uninstalling: Legacy Features. Please wait . . ."
 # Dism /Online /NoRestart /Disable-Feature /FeatureName:NetFx4-AdvSrvs | Out-Null
 Dism /Online /NoRestart /Disable-Feature /FeatureName:WCF-Services45 | Out-Null
 Dism /Online /NoRestart /Disable-Feature /FeatureName:WCF-TCP-PortSharing45 | Out-Null
-# media features left out
-# Dism /Online /NoRestart /Disable-Feature /FeatureName:MediaPlayback | Out-Null
+Dism /Online /NoRestart /Disable-Feature /FeatureName:MediaPlayback | Out-Null
 Dism /Online /NoRestart /Disable-Feature /FeatureName:Printing-PrintToPDFServices-Features | Out-Null
 Dism /Online /NoRestart /Disable-Feature /FeatureName:Printing-XPSServices-Features | Out-Null
 Dism /Online /NoRestart /Disable-Feature /FeatureName:Printing-Foundation-Features | Out-Null
@@ -215,11 +151,6 @@ Unregister-ScheduledTask -TaskName PLUGScheduler -Confirm:$false -ErrorAction Si
 # uninstall update for windows 10 for x64-based systems
 cmd /c "MsiExec.exe /X{B9A7A138-BFD5-4C73-A269-F78CCA28150E} /qn >nul 2>&1"
 cmd /c "MsiExec.exe /X{85C69797-7336-4E83-8D97-32A7C8465A3B} /qn >nul 2>&1"
-# (KB5001716)
-cmd /c "MsiExec.exe /X{B8D93870-98D1-4980-AFCA-E26563CDFB79} /qn >nul 2>&1"
-# uninstall microsoft gameinput
-cmd /c "MsiExec.exe /X{F563DC73-9550-F772-B4BF-2F72C83F9F30} /qn >nul 2>&1"
-cmd /c "MsiExec.exe /X{0812546C-471E-E343-DE9C-AECF3D0137E6} /qn >nul 2>&1"
 # stop onedrive running
 Stop-Process -Force -Name OneDrive -ErrorAction SilentlyContinue | Out-Null
 # uninstall onedrive w10
@@ -279,8 +210,8 @@ Clear-Host
 $progresspreference = 'silentlycontinue'
 Write-Host "Installing: Store. Please wait . . ."
 # install store
-Get-AppXPackage -AllUsers *Microsoft.WindowsStore* | Foreach {Add-AppxPackage -DisableDevelopmentMode -Register -ErrorAction SilentlyContinue "$($_.InstallLocation)\AppXManifest.xml"}
-Get-AppXPackage -AllUsers *Microsoft.Microsoft.StorePurchaseApp * | Foreach {Add-AppxPackage -DisableDevelopmentMode -Register -ErrorAction SilentlyContinue "$($_.InstallLocation)\AppXManifest.xml"}
+Get-AppXPackage -AllUsers *Microsoft.WindowsStore* | ForEach-Object {Add-AppxPackage -DisableDevelopmentMode -Register -ErrorAction SilentlyContinue "$($_.InstallLocation)\AppXManifest.xml"}
+Get-AppXPackage -AllUsers *Microsoft.Microsoft.StorePurchaseApp * | ForEach-Object {Add-AppxPackage -DisableDevelopmentMode -Register -ErrorAction SilentlyContinue "$($_.InstallLocation)\AppXManifest.xml"}
 Clear-Host
 Write-Host "Restart to apply . . ."
 $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
@@ -293,7 +224,7 @@ Clear-Host
 $progresspreference = 'silentlycontinue'
 Write-Host "Installing: All UWP Apps. Please wait . . ."
 # install all uwp apps
-Get-AppxPackage -AllUsers| Foreach {Add-AppxPackage -DisableDevelopmentMode -Register -ErrorAction SilentlyContinue "$($_.InstallLocation)\AppXManifest.xml"}
+Get-AppxPackage -AllUsers| ForEach-Object {Add-AppxPackage -DisableDevelopmentMode -Register -ErrorAction SilentlyContinue "$($_.InstallLocation)\AppXManifest.xml"}
 Clear-Host
 Write-Host "Restart to apply . . ."
 $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
@@ -440,19 +371,7 @@ show-menu
     8 {
 
 Clear-Host
-Write-Host "Installing: Legacy Snipping Tool W10. Please wait . . ."
-# Ensure target directory exists
-New-Item -Path "C:\Program Files\Windows NT\Accessories" -ItemType Directory -Force | Out-Null	
-# Ensure Accessories folder exists
-New-Item -Path "C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Accessories" -ItemType Directory -Force | Out-Null		
-# Snipping Tool (Windows 10 Version 1803)		
-Get-FileFromWeb -URL "https://github.com/ManueITest/Windows/raw/main/SnippingTool.zip" -File "$env:TEMP\SnippingTool.zip"		
-Expand-Archive -Path "$env:TEMP\SnippingTool.zip" -DestinationPath "C:\Program Files\Windows NT\Accessories" -Force			
-# Create Snipping Tool Start menu shortcut		
-$shell = New-Object -ComObject WScript.Shell		
-$shortcut = $shell.CreateShortcut("C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Accessories\Snipping Tool.lnk")		
-$shortcut.TargetPath = "C:\Program Files\Windows NT\Accessories\SnippingTool.exe"	
-$shortcut.Save()
+
 Clear-Host
 Write-Host "Restart to apply . . ."
 $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
@@ -462,22 +381,11 @@ show-menu
     9 {
 
 Clear-Host
-Write-Host "Installing: Legacy Paint W10. Please wait . . ."
-# Ensure target directory exists
-New-Item -Path "C:\Program Files\Windows NT\Accessories" -ItemType Directory -Force | Out-Null	
-# Ensure Accessories folder exists
-New-Item -Path "C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Accessories" -ItemType Directory -Force | Out-Null		
-# classic Paint (mspaint) app taken from Windows 10 Build 14393
-Get-FileFromWeb -URL "https://github.com/ManueITest/Windows/raw/main/Classic%20Paint.zip" -File "$env:TEMP\ClassicPaint.zip"
-Expand-Archive -Path "$env:TEMP\ClassicPaint.zip" -DestinationPath "C:\Program Files\Windows NT\Accessories" -Force	
-# Create Paint Start menu shortcut  
-$shortcut = $shell.CreateShortcut("C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Accessories\Paint.lnk")
-$shortcut.TargetPath = "C:\Program Files\Windows NT\Accessories\mspaint1.exe"
-$shortcut.Save()
+
+Clear-Host
 Write-Host "Restart to apply . . ."
 $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
 show-menu
 
-	  }
-	  
+      }        
     } } else { Write-Host "Invalid input. Please select a valid option (1-9)." } }
