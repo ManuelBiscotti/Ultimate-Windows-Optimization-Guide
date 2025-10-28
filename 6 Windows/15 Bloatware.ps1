@@ -91,7 +91,7 @@ if ((Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion').Curr
     Start-Process regedit.exe -ArgumentList "/s `"$env:TEMP\Restore_New_Text_Document_context_menu_item.reg`"" -Wait	
 }else{Write-Host $_.Exception.Message -ForegroundColor Red}
 Timeout /T 2 | Out-Null
-
+Clear-Host
 Write-Host "Uninstalling: UWP Features. Please wait . . ."
 # uninstall all uwp features
 # network drivers, media player, paint & notepad left out
@@ -121,7 +121,7 @@ Remove-WindowsCapability -Online -Name "WMIC~~~~" | Out-Null
 Remove-WindowsCapability -Online -Name "Windows.Kernel.LA57~~~~0.0.1.0" | Out-Null
 # remove character map start shortcut
 Remove-Item "C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Accessories\System Tools\Character Map.lnk" -Force -ErrorAction SilentlyContinue | Out-Null
-
+Clear-Host
 Write-Host "Uninstalling: Legacy Features. Please wait . . ."
 # uninstall all legacy features
 # .net framework 4.8 advanced services and media features left out
@@ -145,7 +145,7 @@ Dism /Online /NoRestart /Disable-Feature /FeatureName:Windows-Identity-Foundatio
 Dism /Online /NoRestart /Disable-Feature /FeatureName:MicrosoftWindowsPowerShellV2Root | Out-Null
 Dism /Online /NoRestart /Disable-Feature /FeatureName:MicrosoftWindowsPowerShellV2 | Out-Null
 Dism /Online /NoRestart /Disable-Feature /FeatureName:WorkFolders-Client | Out-Null
-
+Clear-Host
 Write-Host "Uninstalling: Legacy Apps. Please wait . . ."
 # uninstall microsoft update health tools w11
 cmd /c "MsiExec.exe /X{C6FD611E-7EFE-488C-A0E0-974C09EF6473} /qn >nul 2>&1"
@@ -172,7 +172,7 @@ Get-ScheduledTask | Where-Object {$_.Taskname -match 'OneDrive'} | Unregister-Sc
 cmd /c "C:\Windows\System32\OneDriveSetup.exe -uninstall >nul 2>&1"
 # clean adobe type manager w10
 cmd /c "reg delete `"HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Font Drivers`" /f >nul 2>&1"
-
+Clear-Host
 # uninstall old snippingtool w10
 Start-Process "C:\Windows\System32\SnippingTool.exe" -ArgumentList "/Uninstall"
 # silent window for old snippingtool w10
@@ -191,64 +191,12 @@ $running = $false
 } else {
 }
 Timeout /T 1 | Out-Null
-Write-Host "Start Menu Taskbar: Clean . . ."
-# CLEAN TASKBAR
-# unpin all taskbar icons
-cmd /c "reg delete HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Taskband /f >nul 2>&1"
-Remove-Item -Recurse -Force "$env:USERPROFILE\AppData\Roaming\Microsoft\Internet Explorer\Quick Launch" -ErrorAction SilentlyContinue | Out-Null
-New-Item -Path "$env:USERPROFILE\AppData\Roaming\Microsoft\Internet Explorer" -Name "Quick Launch" -ItemType Directory -ErrorAction SilentlyContinue | Out-Null
-New-Item -Path "$env:USERPROFILE\AppData\Roaming\Microsoft\Internet Explorer\Quick Launch" -Name "User Pinned" -ItemType Directory -ErrorAction SilentlyContinue | Out-Null
-New-Item -Path "$env:USERPROFILE\AppData\Roaming\Microsoft\Internet Explorer\Quick Launch\User Pinned" -Name "TaskBar" -ItemType Directory -ErrorAction SilentlyContinue | Out-Null
-New-Item -Path "$env:USERPROFILE\AppData\Roaming\Microsoft\Internet Explorer\Quick Launch\User Pinned" -Name "ImplicitAppShortcuts" -ItemType Directory -ErrorAction SilentlyContinue | Out-Null
-# CLEAN START MENU W11
-if ((Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion').CurrentBuild -ge 22000) {
-# Remove all pinned apps from Start https://github.com/Raphire/Win11Debloat/tree/refs/heads/master/Assets/Start				
-Get-Process StartMenuExperienceHost | Stop-Process -Force | Out-Null
-Start-Sleep -Milliseconds 200		
-$dst="$env:LOCALAPPDATA\Packages\Microsoft.Windows.StartMenuExperienceHost_cw5n1h2txyewy\LocalState\start2.bin"		
-if (!(Test-Path (Split-Path $dst))){New-Item -Path (Split-Path $dst) -ItemType Directory -Force}  		
-Invoke-WebRequest -Uri 'https://github.com/Raphire/Win11Debloat/raw/refs/heads/master/Assets/Start/start2.bin' -OutFile $dst -UseBasicParsing  		
-}
-# CLEAN START MENU W10
-elseif ((Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion').CurrentBuild -le 19045) {
-# delete startmenulayout.xml
-Remove-Item -Recurse -Force "$env:SystemDrive\Windows\StartMenuLayout.xml" -ErrorAction SilentlyContinue | Out-Null
-# create startmenulayout.xml
-$MultilineComment = @'
-<LayoutModificationTemplate xmlns:defaultlayout="http://schemas.microsoft.com/Start/2014/FullDefaultLayout" xmlns:start="http://schemas.microsoft.com/Start/2014/StartLayout" Version="1" xmlns:taskbar="http://schemas.microsoft.com/Start/2014/TaskbarLayout" xmlns="http://schemas.microsoft.com/Start/2014/LayoutModification">
-	<LayoutOptions StartTileGroupCellWidth="6" />
-	<DefaultLayoutOverride>
-		<StartLayoutCollection>
-			<defaultlayout:StartLayout GroupCellWidth="6" />
-		</StartLayoutCollection>
-	</DefaultLayoutOverride>
-</LayoutModificationTemplate>
-'@
-Set-Content -Path "C:\Windows\StartMenuLayout.xml" -Value $MultilineComment -Force -Encoding ASCII		
-# assign startmenulayout.xml registry
-$layoutFile="C:\Windows\StartMenuLayout.xml"
-$regAliases = @("HKLM", "HKCU")
-foreach ($regAlias in $regAliases){
-$basePath = $regAlias + ":\SOFTWARE\Policies\Microsoft\Windows"		
-$keyPath = $basePath + "\Explorer"		
-IF(!(Test-Path -Path $keyPath)) { New-Item -Path $basePath -Name "Explorer" | Out-Null }			
-Set-ItemProperty -Path $keyPath -Name "LockedStartLayout" -Value 1 | Out-Null		
-Set-ItemProperty -Path $keyPath -Name "StartLayoutFile" -Value $layoutFile | Out-Null		
-}
-Stop-Process -Force -Name explorer -ErrorAction SilentlyContinue | Out-Null	
-Timeout /T 5 | Out-Null
-# disable lockedstartlayout registry		
-foreach ($regAlias in $regAliases){		
-$basePath = $regAlias + ":\SOFTWARE\Policies\Microsoft\Windows"		
-$keyPath = $basePath + "\Explorer"		
-Set-ItemProperty -Path $keyPath -Name "LockedStartLayout" -Value 0 | Out-Null		
-}
-# restart explorer
-Stop-Process -Force -Name explorer -ErrorAction SilentlyContinue | Out-Null
-# delete startmenulayout.xml
-Remove-Item -Recurse -Force "$env:SystemDrive\Windows\StartMenuLayout.xml" -ErrorAction SilentlyContinue | Out-Null
-}else{Write-Host $_.Exception.Message -ForegroundColor Red}
-pause
+# kill Microsoft Text Input Application
+cmd /c "taskkill /F /IM TextInputHost.exe >nul 2>&1"
+$d=Get-ChildItem "$env:SystemRoot\SystemApps" -Dir -Filter "MicrosoftWindows.Client.CBS_*"|Select-Object -First 1 -ExpandProperty FullName
+if($d){$x=Join-Path $d "TextInputHost.exe"
+if(Test-Path $x){cmd /c "takeown /f `"$x`" >nul 2>&1 & icacls `"$x`" /grant *S-1-3-4:F >nul 2>&1 & move /y `"$x`" `"$env:SystemRoot\TextInputHost.exe.bak`" >nul 2>&1"}
+}			
 # uninstall remote desktop connection
 Start-Process "mstsc" -ArgumentList "/Uninstall"
 Clear-Host
@@ -265,8 +213,10 @@ show-menu
         # install store
         Get-AppXPackage -AllUsers *Microsoft.WindowsStore* | ForEach-Object {Add-AppxPackage -DisableDevelopmentMode -Register -ErrorAction SilentlyContinue "$($_.InstallLocation)\AppXManifest.xml"}
         Get-AppXPackage -AllUsers *Microsoft.Microsoft.StorePurchaseApp * | ForEach-Object {Add-AppxPackage -DisableDevelopmentMode -Register -ErrorAction SilentlyContinue "$($_.InstallLocation)\AppXManifest.xml"}
-	    # enable Microsoft Account Sign-in Assistant
-	$batchCode = @'
+	    
+        # Fix [ PUR-AuthenticationFailure ]
+        # enable Microsoft Account Sign-in Assistant
+	    $batchCode = @'
 @echo off
 :: https://privacy.sexy — v0.13.8 — Sun, 19 Oct 2025 08:43:23 GMT
 :: Initialize environment
@@ -282,10 +232,11 @@ PowerShell -ExecutionPolicy Unrestricted -Command "$serviceName = 'wlidsvc'; $de
 
 :: Restore previous environment settings
 endlocal
+exit
 '@
 	    $batPath = "$env:TEMP\EnableMSAccountSignInAssistant.bat"
 	    Set-Content -Path $batPath -Value $batchCode -Encoding ASCII
-	    Start-Process -FilePath $batPath -Wait -NoNewWindow | Out-Null
+	    Start-Process -FilePath $batPath -WindowStyle Hidden -Wait
 
         try {
             # Open Phone Link App page
@@ -430,6 +381,7 @@ Write-Host "Installing: One Drive. Please wait . . ."
 cmd /c "C:\Windows\SysWOW64\OneDriveSetup.exe >nul 2>&1"
 # install onedrive w11
 cmd /c "C:\Windows\System32\OneDriveSetup.exe >nul 2>&1"
+Start-Process "OneDrive" -ErrorAction SilentlyContinue
 Clear-Host
 Write-Host "Restart to apply . . ."
 $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
@@ -441,9 +393,11 @@ show-menu
 Clear-Host
 Write-Host "Installing: Remote Desktop Connection. Please wait . . ."
 # download remote desktop connection
-Get-FileFromWeb -URL "https://go.microsoft.com/fwlink/?linkid=2247659" -File "$env:TEMP\RemoteDesktopConnection.exe"
+Get-FileFromWeb -URL "https://go.microsoft.com/fwlink/?linkid=2247659" -File "$env:TEMP\setup.exe"
 # install remote desktop connection 
-cmd /c "%TEMP%\RemoteDesktopConnection.exe >nul 2>&1"
+cmd /c "%TEMP%\setup.exe >nul 2>&1"
+Timeout T/1 | Out-Null
+Start-Process "mstsc"
 Clear-Host
 Write-Host "Restart to apply . . ."
 $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
@@ -453,7 +407,21 @@ show-menu
     8 {
 
 Clear-Host
-
+Write-Host "Installing: Legacy Snipping Tool W10. Please wait . . ."
+# Ensure target directory exists
+New-Item -Path "C:\Program Files\Windows NT\Accessories" -ItemType Directory -Force | Out-Null	
+# Ensure Accessories folder exists
+New-Item -Path "C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Accessories" -ItemType Directory -Force | Out-Null		
+# Snipping Tool (Windows 10 Version 1803)		
+Get-FileFromWeb -URL "https://github.com/ManueITest/Windows/raw/main/SnippingTool.zip" -File "$env:TEMP\SnippingTool.zip"		
+Expand-Archive -Path "$env:TEMP\SnippingTool.zip" -DestinationPath "C:\Program Files\Windows NT\Accessories" -Force			
+# Create Snipping Tool Start menu shortcut		
+$shell = New-Object -ComObject WScript.Shell		
+$shortcut = $shell.CreateShortcut("C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Accessories\Snipping Tool.lnk")		
+$shortcut.TargetPath = "C:\Program Files\Windows NT\Accessories\SnippingTool.exe"	
+$shortcut.Save()
+Timeout T/1 | Out-Null
+Start-Process "C:\Program Files\Windows NT\Accessories\SnippingTool.exe"
 Clear-Host
 Write-Host "Restart to apply . . ."
 $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
@@ -463,7 +431,20 @@ show-menu
     9 {
 
 Clear-Host
-
+Write-Host "Installing: Legacy Paint W10. Please wait . . ."
+# Ensure target directory exists
+New-Item -Path "C:\Program Files\Windows NT\Accessories" -ItemType Directory -Force | Out-Null	
+# Ensure Accessories folder exists
+New-Item -Path "C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Accessories" -ItemType Directory -Force | Out-Null		
+# classic Paint (mspaint) app taken from Windows 10 Build 14393
+Get-FileFromWeb -URL "https://github.com/ManueITest/Windows/raw/main/Classic%20Paint.zip" -File "$env:TEMP\ClassicPaint.zip"
+Expand-Archive -Path "$env:TEMP\ClassicPaint.zip" -DestinationPath "C:\Program Files\Windows NT\Accessories" -Force	
+# Create Paint Start menu shortcut  
+$shortcut = $shell.CreateShortcut("C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Accessories\Paint.lnk")
+$shortcut.TargetPath = "C:\Program Files\Windows NT\Accessories\mspaint1.exe"
+$shortcut.Save()
+Timeout T/1 | Out-Null
+Start-Process "C:\Program Files\Windows NT\Accessories\mspaint1.exe"
 Clear-Host
 Write-Host "Restart to apply . . ."
 $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
