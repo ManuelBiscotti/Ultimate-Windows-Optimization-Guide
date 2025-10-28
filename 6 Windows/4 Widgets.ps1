@@ -40,6 +40,9 @@
     $writer.Close()
     }
     }
+
+	$ProgressPreference = 'SilentlyContinue'  
+	$ErrorActionPreference = 'SilentlyContinue'
 	
     Write-Host "1. Widgets: Off (Recommended)"
     Write-Host "2. Widgets: Default"
@@ -50,8 +53,6 @@
     1 {
 
 		Clear-Host
-		$ProgressPreference = 'SilentlyContinue'  
-		$ErrorActionPreference = 'SilentlyContinue'
 
 # disable widgets regedit
 reg add "HKLM\SOFTWARE\Microsoft\PolicyManager\default\NewsAndInterests\AllowNewsAndInterests" /v "value" /t REG_DWORD /d "0" /f | Out-Null
@@ -96,9 +97,6 @@ exit
     2 {
 
 	Clear-Host
-	$ProgressPreference = 'SilentlyContinue'  
-	$ErrorActionPreference = 'SilentlyContinue'
-
 	# widgets regedit
 	reg add "HKLM\SOFTWARE\Microsoft\PolicyManager\default\NewsAndInterests\AllowNewsAndInterests" /v "value" /t REG_DWORD /d "1" /f | Out-Null
 	# windows widgets from taskbar regedit
