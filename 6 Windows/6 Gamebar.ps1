@@ -190,10 +190,9 @@ Regedit.exe /S "$env:TEMP\GamingServicesOff.reg"
 	Write-Output "Removing Gaming Services . . ."
 	Get-AppxPackage -allusers *Microsoft.GamingServices* | Remove-AppxPackage
 
-	Start-Process ms-settings:gaming-gamebar
-
 Write-Host "Restart to apply . . ."
 $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+Start-Process ms-settings:gaming-gamebar
 exit
       }
     2 {
