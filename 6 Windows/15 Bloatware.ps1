@@ -42,7 +42,7 @@ function show-menu {
 	show-menu
     while ($true) {
         $choice = Read-Host " "
-        if ($choice -match '^[1-9]$') {
+        if ($choice -match '^(10|[1-9])$') {
         switch ($choice) {
             1 {
 
