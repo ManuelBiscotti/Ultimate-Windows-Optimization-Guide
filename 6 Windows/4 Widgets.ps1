@@ -26,8 +26,8 @@ function Get-FileFromWeb {
     $r.Close(); $w.Close(); $resp.Close()
 }
 
-Write-Host "1. Widgets: Off (Recommended)"
-Write-Host "2. Widgets: Default"
+Write-Host "1. Widgets(News and interests): Off (Recommended)"
+Write-Host "2. Widgets(News and interests): Default"
 while ($true) {
     $choice = Read-Host " "
     if ($choice -match '^[1-2]$') {
