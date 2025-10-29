@@ -36,8 +36,8 @@ exit
 Clear-Host
 $progresspreference = 'silentlycontinue'
 # install copilot
-Get-AppXPackage -AllUsers *Microsoft.Windows.Ai.Copilot.Provider* | Foreach {Add-AppxPackage -DisableDevelopmentMode -Register "$($_.InstallLocation)\AppXManifest.xml"}
-Get-AppXPackage -AllUsers *Microsoft.Copilot* | Foreach {Add-AppxPackage -DisableDevelopmentMode -Register "$($_.InstallLocation)\AppXManifest.xml"}
+Get-AppXPackage -AllUsers *Microsoft.Windows.Ai.Copilot.Provider* | ForEach-Object {Add-AppxPackage -DisableDevelopmentMode -Register "$($_.InstallLocation)\AppXManifest.xml"}
+Get-AppXPackage -AllUsers *Microsoft.Copilot* | ForEach-Object {Add-AppxPackage -DisableDevelopmentMode -Register "$($_.InstallLocation)\AppXManifest.xml"}
 # copilot regedit
 cmd /c "reg delete `"HKCU\Software\Policies\Microsoft\Windows\WindowsCopilot`" /f >nul 2>&1"
 cmd /c "reg delete `"HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsCopilot`" /f >nul 2>&1"
