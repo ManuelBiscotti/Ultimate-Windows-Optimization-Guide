@@ -37,6 +37,7 @@ function show-menu {
     Write-Host " 7. Install: Remote Desktop Connection"
     Write-Host " 8. Install: Legacy Snipping Tool W10"
     Write-Host " 9. Install: Legacy Paint W10"
+    Write-Host "10. Install: Microsoft Text Input Application"
 }
 	show-menu
     while ($true) {
@@ -83,7 +84,8 @@ function show-menu {
 					Start-Process regedit.exe -ArgumentList "/s `"$env:TEMP\Restore_New_Text_Document_context_menu_item.reg`"" -Wait	
 				}else{Write-Host $_.Exception.Message -ForegroundColor Red}
 				Timeout /T 2 | Out-Null	
-				Clear-Host	
+				Clear-Host
+
 				Write-Host "Uninstalling: UWP Features. Please wait . . ."	
 				# uninstall all uwp features	
 				# network drivers, media player, paint & notepad left out	
@@ -183,17 +185,19 @@ function show-menu {
 				} else {	
 				}	
 				Timeout /T 1 | Out-Null	
+
 				# kill Microsoft Text Input Application	
 				cmd /c "taskkill /F /IM TextInputHost.exe >nul 2>&1"	
 				$d=Get-ChildItem "$env:SystemRoot\SystemApps" -Dir -Filter "MicrosoftWindows.Client.CBS_*"|Select-Object -First 1 -ExpandProperty FullName	
 				if($d){$x=Join-Path $d "TextInputHost.exe"	
 				if(Test-Path $x){cmd /c "takeown /f `"$x`" >nul 2>&1 & icacls `"$x`" /grant *S-1-3-4:F >nul 2>&1 & move /y `"$x`" `"$env:SystemRoot\TextInputHost.exe.bak`" >nul 2>&1"}	
-				}	
+				}
+
 				# schedule bloatware killer task	
 				$dir="$env:ProgramData\Bloatware"	
 				New-Item $dir -ItemType Directory -Force  *> $null											
 				$script = @'
-for ($i = 1; $i -le 3; $i++) {					
+for ($i = 1; $i -le 3; $i++) {				
     "gamingservices","AggregatorHost","MoUsoCoreWorker","UserOOBEBroker","TextInputHost",					
     "WinStore.App","msedge","SearchApp","ConnectedUserExperiences","CrossDeviceResume",					
     "MicrosoftEdgeUpdate","msedgewebview2","ONENOTEM" | ForEach-Object {					
@@ -462,7 +466,25 @@ exit
 				$null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
 				show-menu
 				
-			}        
+			}    
+			10 {
+
+				Clear-Host
+				Write-Host "Installing: Microsoft Text Input Application . . ."	
+				$backupPath = Join-Path $env:SystemRoot "TextInputHost.exe.bak"
+				$systemAppPath = Get-ChildItem "$env:SystemRoot\SystemApps" -Directory -Filter "MicrosoftWindows.Client.CBS_*" | Select-Object -First 1 -ExpandProperty FullName
+				if ($systemAppPath -and (Test-Path $backupPath)) {
+    				$originalPath = Join-Path $systemAppPath "TextInputHost.exe"
+    				takeown /f $originalPath /a > $null 2>&1
+    				icacls $originalPath /reset > $null 2>&1
+    				if (Test-Path $originalPath) { Remove-Item $originalPath -Force }
+    				Move-Item -Path $backupPath -Destination $originalPath -Force
+    				icacls $originalPath /reset > $null 2>&1
+    				Start-Process $originalPath
+    				Start-Process taskmgr
+				}
+
+			}    
 		} 
 	} else { Write-Host "Invalid input. Please select a valid option (1-9)." } 
 }
