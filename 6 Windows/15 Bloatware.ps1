@@ -53,7 +53,6 @@ function show-menu {
 	            Where-Object {
 	                $_.Name -notlike '*NVIDIA*' -and
 	                $_.Name -notlike '*CBS*' -and
-	                $_.Name -notlike '*AppInstaller*' -and # Winget
 	                $_.Name -notlike '*Gaming*' -and
 	                $_.Name -notlike '*Xbox*' -and
 		            $_.Name -notlike '*Widgets*' -and
