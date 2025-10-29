@@ -119,9 +119,9 @@ while ($true) {
 					# Windows Web Experience App
 					Get-AppXPackage -AllUsers *MicrosoftWindows.Client.WebExperience* | ForEach-Object {Add-AppxPackage -DisableDevelopmentMode -Register -ErrorAction SilentlyContinue "$($_.InstallLocation)\AppXManifest.xml"}
 					# Start Experiences App
-					Get-AppxPackage -AllUsers *Microsoft.StartExperiencesApp* | ForEach-Object {
-    					Add-AppxPackage -DisableDevelopmentMode -Register "$($_.InstallLocation)\AppXManifest.xml" -ErrorAction SilentlyContinue
-					}
+Get-AppxPackage -AllUsers Microsoft.Windows.StartMenuExperienceHost | ForEach-Object {
+  Add-AppxPackage -Register "$($_.InstallLocation)\AppxManifest.xml" -DisableDevelopmentMode
+}
 
 					# Update Apps
 					if (Get-Command winget -ErrorAction SilentlyContinue) {
@@ -160,9 +160,8 @@ exit
 		    
 			    		try {
 			        		# Open Downloads and Updates
-			        		Start-Process "ms-windows-store://downloads"
+			        		Start-Process "ms-windows-store://downloadsandupdates"
 			    		}catch{
-			        		Write-Host "MS Store failed to install correctly, trying another method . . ."
 			        		Get-FileFromWeb -URL "https://github.com/ManuelBiscotti/test/raw/refs/heads/main/tools/MS_Store.msix" -File "$env:TEMP\MS_Store.msix"
 			        		Clear-Host
 			        		Start-Process "$env:TEMP\MS_Store.msix" -Wait

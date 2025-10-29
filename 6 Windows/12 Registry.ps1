@@ -2652,7 +2652,7 @@ E0,F6,C5,D5,0E,CA,50,00,00
 				Regedit.exe /S "$env:TEMP\msedge-debloat.reg"
 				Timeout /T 1 | Out-Null
 				Regedit.exe /S "$env:TEMP\edge-debloat.reg"
-				Timeout /T 1 | Out-Null
+				Timeout /T 2 | Out-Null
 				# remove extensions
 				Remove-Item -Path "HKLM:\Software\Policies\Microsoft\Edge\ExtensionInstallForcelist" -Recurse -Force -ErrorAction SilentlyContinue
 			
