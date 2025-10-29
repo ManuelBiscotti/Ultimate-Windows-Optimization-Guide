@@ -197,10 +197,7 @@ exit
       }
     2 {
 
-	Clear-Host
-	$ProgressPreference = 'SilentlyContinue'  
-	$ErrorActionPreference = 'SilentlyContinue'
-	
+	Clear-Host	
 # gamebar regedit
 reg add "HKCU\System\GameConfigStore" /v "GameDVR_Enabled" /t REG_DWORD /d "1" /f | Out-Null
 reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\GameDVR" /v "AppCaptureEnabled" /t REG_DWORD /d "1" /f | Out-Null
