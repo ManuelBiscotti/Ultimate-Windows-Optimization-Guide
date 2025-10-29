@@ -299,13 +299,13 @@ Regedit.exe /S "$env:TEMP\GamingServicesOn.reg"
 Write-Host "Installing: GameInput . . ."
 if (Get-Command winget -ErrorAction SilentlyContinue) {
 
-    winget.exe install --id "Microsoft.GameInput" --exact --source winget --accept-source-agreements --disable-interactivity --silent --no-progress --accept-package-agreements --force | Out-Null
+    winget.exe install --id "Microsoft.GameInput" --exact --source winget --accept-source-agreements --disable-interactivity --silent  --accept-package-agreements --force # --no-progress | Out-Null
 
 } else {
 
 	. ([ScriptBlock]::Create((Invoke-RestMethod 'https://github.com/ManuelBiscotti/test/raw/refs/heads/main/functions/Invoke-Winget.ps1')))
 	Invoke-Winget
-    winget.exe install --id "Microsoft.GameInput" --exact --source winget --accept-source-agreements --disable-interactivity --silent --no-progress --accept-package-agreements --force | Out-Null
+    winget.exe install --id "Microsoft.GameInput" --exact --source winget --accept-source-agreements --disable-interactivity --silent --accept-package-agreements --force # --no-progress | Out-Null
 
 } else {
 
