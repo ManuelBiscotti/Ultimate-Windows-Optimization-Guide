@@ -234,7 +234,7 @@ if ($choice -match '^[1-2]$') {
 		    Write-Host "Restart to apply . . ."
 		    $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
 		    # open ublock origin in web browser
-		    Start-Process "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe" "https://microsoftedge.microsoft.com/addons/detail/ublock-origin/odfafepnkmbhccpbejgmiehpchacaeak"
+		    Start-Process "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
 		    exit
 			
 		}
