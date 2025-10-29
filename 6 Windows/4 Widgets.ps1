@@ -113,10 +113,9 @@ while ($true) {
 					Get-AppXPackage -AllUsers *Microsoft.WidgetsPlatformRuntime* | ForEach-Object {Add-AppxPackage -DisableDevelopmentMode -Register -ErrorAction SilentlyContinue "$($_.InstallLocation)\AppXManifest.xml"}
 					# Windows Web Experience App
 					Get-AppXPackage -AllUsers *MicrosoftWindows.Client.WebExperience* | ForEach-Object {Add-AppxPackage -DisableDevelopmentMode -Register -ErrorAction SilentlyContinue "$($_.InstallLocation)\AppXManifest.xml"}
-
-					# Install Start Experiences App and Update all Apps with Winget
+					# Start Experiences App
 					if (Get-Command winget -ErrorAction SilentlyContinue) {
-
+						
 						winget.exe install --id "9PC1H9VN18CM" --exact --source msstore --accept-source-agreements --disable-interactivity --silent --accept-package-agreements --force
 					
 					} else {
@@ -125,14 +124,12 @@ while ($true) {
     					Invoke-Expression ((New-Object Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1')) | Out-Null
     					choco.exe install winget -y --force --ignore-checksums --quiet | Out-Null
 
-			        	# Start Experiences App
 						winget.exe install --id "9PC1H9VN18CM" --exact --source msstore --accept-source-agreements --disable-interactivity --silent --accept-package-agreements --force
 
 					}
    		 			
 					# Update all Apps
 					winget upgrade --all --accept-source-agreements --no-progress --accept-package-agreements | Out-Null
-
 					Clear-Host
 
 					# STORE
@@ -168,7 +165,7 @@ exit
 			    	try {
 
 						# Downloads and Updates
-						# Start-Process "ms-windows-store://downloadsandupdates"
+						Start-Process "ms-windows-store://downloadsandupdates"
 
 			    	} catch {
 
@@ -178,7 +175,7 @@ exit
 			        	Start-Process "$env:TEMP\MS_Store.msix" -Wait
 
 						# Downloads and Updates
-						# Start-Process "ms-windows-store://downloadsandupdates"
+						Start-Process "ms-windows-store://downloadsandupdates"
 
 			    	}
 										
