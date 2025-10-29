@@ -118,25 +118,23 @@ while ($true) {
 					Get-AppXPackage -AllUsers *Microsoft.WidgetsPlatformRuntime* | ForEach-Object {Add-AppxPackage -DisableDevelopmentMode -Register -ErrorAction SilentlyContinue "$($_.InstallLocation)\AppXManifest.xml"}
 					# Windows Web Experience App
 					Get-AppXPackage -AllUsers *MicrosoftWindows.Client.WebExperience* | ForEach-Object {Add-AppxPackage -DisableDevelopmentMode -Register -ErrorAction SilentlyContinue "$($_.InstallLocation)\AppXManifest.xml"}
-					# Start Experiences App
-Get-AppxPackage -AllUsers Microsoft.Windows.StartMenuExperienceHost | ForEach-Object {
-  Add-AppxPackage -Register "$($_.InstallLocation)\AppxManifest.xml" -DisableDevelopmentMode
-}
 
-					# Update Apps
+					# Update Apps with Winget if present
 					if (Get-Command winget -ErrorAction SilentlyContinue) {
-   		 				winget upgrade --all --accept-source-agreements --accept-package-agreements
+   		 				winget upgrade --all --accept-source-agreements --no-progress --accept-package-agreements | Out-Null
 					} else {
-						# STORE
-						Clear-Host
-						Write-Host "Installing: Store. Please wait . . ."
-						# install store
-						Get-AppXPackage -AllUsers *Microsoft.WindowsStore* | ForEach-Object {Add-AppxPackage -DisableDevelopmentMode -Register -ErrorAction SilentlyContinue "$($_.InstallLocation)\AppXManifest.xml"}
-						Get-AppXPackage -AllUsers *Microsoft.Microsoft.StorePurchaseApp * | ForEach-Object {Add-AppxPackage -DisableDevelopmentMode -Register -ErrorAction SilentlyContinue "$($_.InstallLocation)\AppXManifest.xml"}
+					}
+
+					# STORE
+					Clear-Host
+					Write-Host "Installing: Store. Please wait . . ."
+					# install store
+					Get-AppXPackage -AllUsers *Microsoft.WindowsStore* | ForEach-Object {Add-AppxPackage -DisableDevelopmentMode -Register -ErrorAction SilentlyContinue "$($_.InstallLocation)\AppXManifest.xml"}
+					Get-AppXPackage -AllUsers *Microsoft.Microsoft.StorePurchaseApp * | ForEach-Object {Add-AppxPackage -DisableDevelopmentMode -Register -ErrorAction SilentlyContinue "$($_.InstallLocation)\AppXManifest.xml"}
 	    
-						# Fix PUR-AuthenticationFailure
-						# Enable Microsoft Account Sign-in Assistant
-						$batchCode = @'
+					# Fix PUR-AuthenticationFailure
+					# Enable Microsoft Account Sign-in Assistant
+					$batchCode = @'
 @echo off
 :: https://privacy.sexy — v0.13.8 — Sun, 19 Oct 2025 08:43:23 GMT
 :: Initialize environment
@@ -154,20 +152,22 @@ PowerShell -ExecutionPolicy Unrestricted -Command "$serviceName = 'wlidsvc'; $de
 endlocal
 exit
 '@
-			    		$batPath = "$env:TEMP\EnableMSAccountSignInAssistant.bat"
-			    		Set-Content -Path $batPath -Value $batchCode -Encoding ASCII
-			    		Start-Process -FilePath $batPath -WindowStyle Hidden -Wait
+			    	$batPath = "$env:TEMP\EnableMSAccountSignInAssistant.bat"
+			    	Set-Content -Path $batPath -Value $batchCode -Encoding ASCII
+			    	Start-Process -FilePath $batPath -WindowStyle Hidden -Wait
 		    
-			    		try {
-			        		# Open Downloads and Updates
-			        		Start-Process "ms-windows-store://downloadsandupdates"
-			    		}catch{
-			        		Get-FileFromWeb -URL "https://github.com/ManuelBiscotti/test/raw/refs/heads/main/tools/MS_Store.msix" -File "$env:TEMP\MS_Store.msix"
-			        		Clear-Host
-			        		Start-Process "$env:TEMP\MS_Store.msix" -Wait
-							Start-Process "ms-windows-store://downloadsandupdates"
-			    		}
-					}										
+			    	try {
+			        	# Open Start Experiences App page
+						Start-Process "ms-windows-store://pdp/?ProductId=9PC1H9VN18CM"
+			    	}catch{
+						# Install Store with a different method
+			        	Get-FileFromWeb -URL "https://github.com/ManuelBiscotti/test/raw/refs/heads/main/tools/MS_Store.msix" -File "$env:TEMP\MS_Store.msix"
+			        	Clear-Host
+			        	Start-Process "$env:TEMP\MS_Store.msix" -Wait
+						# Open Start Experiences App page
+						Start-Process "ms-windows-store://pdp/?ProductId=9PC1H9VN18CM"
+			    	}
+										
 				}else{Write-Host $_.Exception.Message -ForegroundColor Red}
 	
 				Clear-Host
