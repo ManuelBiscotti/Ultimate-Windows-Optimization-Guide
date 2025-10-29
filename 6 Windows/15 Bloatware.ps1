@@ -486,5 +486,5 @@ exit
 
 			}    
 		} 
-	} else { Write-Host "Invalid input. Please select a valid option (1-9)." } 
+	} else { Write-Host "Invalid input. Please select a valid option (1-10)." } 
 }
