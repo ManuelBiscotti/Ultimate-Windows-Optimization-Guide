@@ -300,10 +300,17 @@ Regedit.exe /S "$env:TEMP\GamingServicesOn.reg"
 
 # Gaming Service App
 Get-AppXPackage -AllUsers *Microsoft.GamingServices* | ForEach-Object {Add-AppxPackage -DisableDevelopmentMode -Register -ErrorAction SilentlyContinue "$($_.InstallLocation)\AppXManifest.xml"}
+# Update Apps with Winget if present
+if (Get-Command winget -ErrorAction SilentlyContinue) {
+   	winget upgrade --all --accept-source-agreements --no-progress --accept-package-agreements | Out-Null
+} else {
+}
+<#
 # install store
 Get-AppXPackage -AllUsers *Microsoft.WindowsStore* | ForEach-Object {Add-AppxPackage -DisableDevelopmentMode -Register -ErrorAction SilentlyContinue "$($_.InstallLocation)\AppXManifest.xml"}
 Get-AppXPackage -AllUsers *Microsoft.Microsoft.StorePurchaseApp * | ForEach-Object {Add-AppxPackage -DisableDevelopmentMode -Register -ErrorAction SilentlyContinue "$($_.InstallLocation)\AppXManifest.xml"}
 Start-Process "ms-windows-store://pdp/?productid=9MWPM2CQNLHN"
+#>
 Start-Process ms-settings:gaming-gamebar
 Clear-Host
 Write-Host "Restart to apply . . ."
