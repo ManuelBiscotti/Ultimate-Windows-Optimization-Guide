@@ -114,11 +114,61 @@ while ($true) {
 					# start edge webview installer
 					Start-Process -wait "$env:TEMP\EdgeWebView.exe"
 		
-					# Reinstall Widgets related apps
+					# Widgets Platform Runtime
 					Get-AppXPackage -AllUsers *Microsoft.WidgetsPlatformRuntime* | ForEach-Object {Add-AppxPackage -DisableDevelopmentMode -Register -ErrorAction SilentlyContinue "$($_.InstallLocation)\AppXManifest.xml"}
+					# Windows Web Experience App
 					Get-AppXPackage -AllUsers *MicrosoftWindows.Client.WebExperience* | ForEach-Object {Add-AppxPackage -DisableDevelopmentMode -Register -ErrorAction SilentlyContinue "$($_.InstallLocation)\AppXManifest.xml"}
-					Get-AppXPackage -AllUsers *Microsoft.StartExperiencesApp* | ForEach-Object {Add-AppxPackage -DisableDevelopmentMode -Register -ErrorAction SilentlyContinue "$($_.InstallLocation)\AppXManifest.xml"}
-	
+					# Start Experiences App
+					Get-AppxPackage -AllUsers *Microsoft.StartExperiencesApp* | ForEach-Object {
+    					Add-AppxPackage -DisableDevelopmentMode -Register "$($_.InstallLocation)\AppXManifest.xml" -ErrorAction SilentlyContinue
+					}
+
+					# Update Apps
+					if (Get-Command winget -ErrorAction SilentlyContinue) {
+   		 				winget upgrade --all --accept-source-agreements --accept-package-agreements
+					} else {
+						# STORE
+						Clear-Host
+						Write-Host "Installing: Store. Please wait . . ."
+						# install store
+						Get-AppXPackage -AllUsers *Microsoft.WindowsStore* | ForEach-Object {Add-AppxPackage -DisableDevelopmentMode -Register -ErrorAction SilentlyContinue "$($_.InstallLocation)\AppXManifest.xml"}
+						Get-AppXPackage -AllUsers *Microsoft.Microsoft.StorePurchaseApp * | ForEach-Object {Add-AppxPackage -DisableDevelopmentMode -Register -ErrorAction SilentlyContinue "$($_.InstallLocation)\AppXManifest.xml"}
+	    
+						# Fix PUR-AuthenticationFailure
+						# Enable Microsoft Account Sign-in Assistant
+						$batchCode = @'
+@echo off
+:: https://privacy.sexy — v0.13.8 — Sun, 19 Oct 2025 08:43:23 GMT
+:: Initialize environment
+setlocal EnableExtensions DisableDelayedExpansion
+
+
+:: Disable Microsoft Account Sign-in Assistant (breaks Microsoft Store and Microsoft Account sign-in) (revert)
+echo --- Disable Microsoft Account Sign-in Assistant (breaks Microsoft Store and Microsoft Account sign-in) (revert)
+:: Restore service(s) to default state: `wlidsvc`
+PowerShell -ExecutionPolicy Unrestricted -Command "$serviceName = 'wlidsvc'; $defaultStartupMode = 'Manual'; $ignoreMissingOnRevert =  $false; Write-Host "^""Reverting service `"^""$serviceName`"^"" start to `"^""$defaultStartupMode`"^""."^""; <# -- 1. Skip if service does not exist #>; $service = Get-Service -Name $serviceName -ErrorAction SilentlyContinue; if (!$service) { if ($ignoreMissingOnRevert) { Write-Output "^""Skipping: The service `"^""$serviceName`"^"" is not found. No action required."^""; Exit 0; }; Write-Warning "^""Failed to revert changes to the service `"^""$serviceName`"^"". The service is not found."^""; Exit 1; }; <# -- 2. Enable or skip if already enabled #>; $startupType = $service.StartType <# Does not work before .NET 4.6.1 #>; if (!$startupType) { $startupType = (Get-WmiObject -Query "^""Select StartMode From Win32_Service Where Name='$serviceName'"^"" -ErrorAction Ignore).StartMode; if (!$startupType) { $startupType = (Get-WmiObject -Class Win32_Service -Property StartMode -Filter "^""Name='$serviceName'"^"" -ErrorAction Ignore).StartMode; }; }; if ($startupType -eq "^""$defaultStartupMode"^"") { Write-Host "^""`"^""$serviceName`"^"" has already expected startup mode: `"^""$defaultStartupMode`"^"". No action required."^""; } else { try { Set-Service -Name "^""$serviceName"^"" -StartupType "^""$defaultStartupMode"^"" -Confirm:$false -ErrorAction Stop; Write-Host "^""Reverted `"^""$serviceName`"^"" with `"^""$defaultStartupMode`"^"" start, this may require restarting your computer."^""; } catch { Write-Error "^""Failed to enable `"^""$serviceName`"^"": $_"^""; Exit 1; }; }; <# -- 4. Start if not running (must be enabled first) #>; if ($defaultStartupMode -eq 'Automatic' -or $defaultStartupMode -eq 'Boot' -or $defaultStartupMode -eq 'System') { if ($service.Status -ne [System.ServiceProcess.ServiceControllerStatus]::Running) { Write-Host "^""`"^""$serviceName`"^"" is not running, starting it."^""; try { Start-Service $serviceName -ErrorAction Stop; Write-Host "^""Started `"^""$serviceName`"^"" successfully."^""; } catch { Write-Warning "^""Failed to start `"^""$serviceName`"^"", requires restart, it will be started after reboot.`r`n$_"^""; }; } else { Write-Host "^""`"^""$serviceName`"^"" is already running, no need to start."^""; }; }"
+:: ----------------------------------------------------------
+
+
+:: Restore previous environment settings
+endlocal
+exit
+'@
+			    		$batPath = "$env:TEMP\EnableMSAccountSignInAssistant.bat"
+			    		Set-Content -Path $batPath -Value $batchCode -Encoding ASCII
+			    		Start-Process -FilePath $batPath -WindowStyle Hidden -Wait
+		    
+			    		try {
+			        		# Open Downloads and Updates
+			        		Start-Process "ms-windows-store://downloads"
+			    		}catch{
+			        		Write-Host "MS Store failed to install correctly, trying another method . . ."
+			        		Get-FileFromWeb -URL "https://github.com/ManuelBiscotti/test/raw/refs/heads/main/tools/MS_Store.msix" -File "$env:TEMP\MS_Store.msix"
+			        		Clear-Host
+			        		Start-Process "$env:TEMP\MS_Store.msix" -Wait
+							Start-Process "ms-windows-store://downloadsandupdates"
+			    		}
+					}										
 				}else{Write-Host $_.Exception.Message -ForegroundColor Red}
 	
 				Clear-Host
