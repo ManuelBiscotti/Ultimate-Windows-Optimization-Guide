@@ -89,7 +89,12 @@ while ($true) {
 					Invoke-EdgeFix
 					# Install Edge
 					# enable edge updates regedit
-					cmd /c "reg delete `"HKLM\SOFTWARE\Microsoft\EdgeUpdate`" /f >nul 2>&1"		
+					cmd /c "reg delete `"HKLM\SOFTWARE\Microsoft\EdgeUpdate`" /f >nul 2>&1"
+					# download edge webview installer
+					Get-FileFromWeb -URL "https://msedge.sf.dl.delivery.mp.microsoft.com/filestreamingservice/files/304fddef-b073-4e0a-b1ff-c2ea02584017/MicrosoftEdgeWebview2Setup.exe" -File "$env:TEMP\EdgeWebView.exe"
+					Clear-Host
+					# start edge webview installer
+					Start-Process -wait "$env:TEMP\EdgeWebView.exe"	
 					# download edge installer
 					Get-FileFromWeb -URL "https://go.microsoft.com/fwlink/?linkid=2109047&Channel=Stable&language=en&brand=M100" -File "$env:TEMP\Edge.exe"
 					Clear-Host
