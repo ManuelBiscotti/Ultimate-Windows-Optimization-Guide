@@ -2623,6 +2623,21 @@ E0,F6,C5,D5,0E,CA,50,00,00
 	            # import reg file
                 Regedit.exe /S "$env:TEMP\Registry Optimize.reg"
                 Timeout /T 1 | Out-Null
+
+				# UPDATES
+				# Pause Windows updates
+				Invoke-WebRequest -UseBasicParsing -Uri "https://github.com/Aetherinox/pause-windows-updates/raw/refs/heads/main/windows-updates-pause.reg" -OutFile "$env:TEMP\windows-updates-pause.reg"
+				Start-Process reg.exe -ArgumentList "import `"$env:TEMP\windows-updates-pause.reg`"" -Wait
+				
+				# Sets Windows Update to recommended settings
+				Invoke-WebRequest -UseBasicParsing -Uri "https://github.com/ChrisTitusTech/winutil/raw/refs/heads/main/functions/public/Invoke-WPFUpdatessecurity.ps1" -OutFile "$env:TEMP\Invoke-WPFUpdatessecurity.ps1"
+				(Get-Content "$env:TEMP\Invoke-WPFUpdatessecurity.ps1") | Where-Object {$_ -notmatch '\[System\.Windows\.MessageBox'} | Set-Content -Path "$env:TEMP\Invoke-WPFUpdatessecurity.ps1" -Encoding UTF8
+				
+				. "$env:TEMP\Invoke-WPFUpdatessecurity.ps1"
+				if (Get-Command Invoke-WPFUpdatessecurity -ErrorAction SilentlyContinue) {
+				    Invoke-WPFUpdatessecurity *> $null 2>&1
+				}
+				
 				# EDGE
 				# microsoft-edge-debloater
 				Invoke-WebRequest -Uri "https://github.com/bibicadotnet/microsoft-edge-debloater/archive/refs/heads/main.zip" -OutFile "$env:TEMP\main.zip"
@@ -6906,6 +6921,19 @@ _dpctimeout"=-
 				# edit reg file
 				$path = "$env:TEMP\Registry Defaults.reg"
 				(Get-Content $path) -replace "\?","$" | Out-File $path
+
+				# Unpause Windows updates
+				Invoke-WebRequest -UseBasicParsing -Uri "https://github.com/Aetherinox/pause-windows-updates/raw/refs/heads/main/windows-updates-unpause.reg" -OutFile "$env:TEMP\windows-updates-unpause.reg"
+				Start-Process reg.exe -ArgumentList "import `"$env:TEMP\windows-updates-unpause.reg`"" -Wait
+				
+				# Resets Windows Update settings to default
+				Invoke-WebRequest -UseBasicParsing -Uri "https://github.com/ChrisTitusTech/winutil/raw/refs/heads/main/functions/public/Invoke-WPFUpdatesdefault.ps1" -OutFile "$env:TEMP\Invoke-WPFUpdatesdefault.ps1"
+				(Get-Content "$env:TEMP\Invoke-WPFUpdatesdefault.ps1") | Where-Object {$_ -notmatch '\[System\.Windows\.MessageBox'} | Set-Content -Path "$env:TEMP\Invoke-WPFUpdatesdefault.ps1" -Encoding UTF8
+								
+				. "$env:TEMP\Invoke-WPFUpdatesdefault.ps1"
+				if (Get-Command Invoke-WPFUpdatessecurity -ErrorAction SilentlyContinue) {
+				    Invoke-WPFUpdatesdefault *> $null 2>&1
+				}				
 
 				# Default signout Lockscreen
                 # delete image
