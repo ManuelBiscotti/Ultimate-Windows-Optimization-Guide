@@ -61,7 +61,9 @@ while ($true) {
 					Write-Host "Removing Widgets . . ."	
 		
 					# Remove Widgets related apps
-					Get-AppxPackage -AllUsers | Where-Object {$_.Name -like "*Experience*" -or $_.Name -like "*Widgets*"} | Remove-AppxPackage
+					Get-AppxPackage -allusers *Microsoft.WidgetsPlatformRuntime* | Remove-AppxPackage
+					Get-AppxPackage -allusers *MicrosoftWindows.Client.WebExperience* | Remove-AppxPackage
+					Get-AppxPackage -allusers *Microsoft.StartExperiencesApp* | Remove-AppxPackage
 
 					# Disable Widgets
 					reg add "HKLM\SOFTWARE\Microsoft\PolicyManager\default\NewsAndInterests\AllowNewsAndInterests" /v "value" /t REG_DWORD /d "0" /f | Out-Null
@@ -113,12 +115,13 @@ while ($true) {
 					Start-Process -wait "$env:TEMP\EdgeWebView.exe"
 		
 					# Reinstall Widgets related apps
-					Get-AppXPackage -AllUsers *Microsoft.WidgetsPlatformRuntime * | ForEach-Object {Add-AppxPackage -DisableDevelopmentMode -Register -ErrorAction SilentlyContinue "$($_.InstallLocation)\AppXManifest.xml"}
-					Get-AppXPackage -AllUsers *MicrosoftWindows.Client.WebExperience * | ForEach-Object {Add-AppxPackage -DisableDevelopmentMode -Register -ErrorAction SilentlyContinue "$($_.InstallLocation)\AppXManifest.xml"}
-					Get-AppXPackage -AllUsers *Microsoft.StartExperiencesApp * | ForEach-Object {Add-AppxPackage -DisableDevelopmentMode -Register -ErrorAction SilentlyContinue "$($_.InstallLocation)\AppXManifest.xml"}
+					Get-AppXPackage -AllUsers *Microsoft.WidgetsPlatformRuntime* | ForEach-Object {Add-AppxPackage -DisableDevelopmentMode -Register -ErrorAction SilentlyContinue "$($_.InstallLocation)\AppXManifest.xml"}
+					Get-AppXPackage -AllUsers *MicrosoftWindows.Client.WebExperience* | ForEach-Object {Add-AppxPackage -DisableDevelopmentMode -Register -ErrorAction SilentlyContinue "$($_.InstallLocation)\AppXManifest.xml"}
+					Get-AppXPackage -AllUsers *Microsoft.StartExperiencesApp* | ForEach-Object {Add-AppxPackage -DisableDevelopmentMode -Register -ErrorAction SilentlyContinue "$($_.InstallLocation)\AppXManifest.xml"}
 	
 				}else{Write-Host $_.Exception.Message -ForegroundColor Red}
 	
+				Clear-Host
 				Write-Host "Restart to apply . . ."
 				$null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
 				exit
