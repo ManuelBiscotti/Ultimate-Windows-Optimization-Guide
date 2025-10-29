@@ -1,6 +1,6 @@
-If (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]"Administrator")){
-  Start-Process PowerShell.exe -ArgumentList ("-NoProfile -ExecutionPolicy Bypass -File `"{0}`"" -f $PSCommandPath) -Verb RunAs
-  Exit
+if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+    Start-Process powershell -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`"" -Verb RunAs
+    exit
 }
 
 $Host.UI.RawUI.WindowTitle = $myInvocation.MyCommand.Definition + " (Administrator)"
@@ -46,9 +46,7 @@ while ($true) {
 
 				# Windows 10
 				if ((Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion').CurrentBuild -le 19045) {
-		
-					Write-Host "Removing News and interests .	. ."
-		
+				
 					# Disable News and interests (Win 10)
 					New-Item -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\Windows Feeds' -Force | Out-Null
 					Set-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\Windows Feeds' -Name 'EnableFeeds' -Value 0 -Type DWord | Out-Null
@@ -57,9 +55,7 @@ while ($true) {
 	
 				# Windows 11
 				elseif ((Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion').CurrentBuild -ge 22000) {
-		
-					Write-Host "Removing Widgets . . ."	
-		
+			
 					# Remove Widgets related apps
 					Get-AppxPackage -allusers *Microsoft.WidgetsPlatformRuntime* | Remove-AppxPackage
 					Get-AppxPackage -allusers *MicrosoftWindows.Client.WebExperience* | Remove-AppxPackage
@@ -87,7 +83,7 @@ while ($true) {
 
 				# Windows 10
 				if ((Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion').CurrentBuild -le 19045) {
-					Write-Host "Fixing News and interests .	. ."
+
 					# Install Edge
 					# enable edge updates regedit
 					cmd /c "reg delete `"HKLM\SOFTWARE\Microsoft\EdgeUpdate`" /f >nul 2>&1"		
@@ -106,7 +102,6 @@ while ($true) {
 	
 				# Windows 11
 				elseif ((Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion').CurrentBuild -ge 22000) {
-					Write-Host "Fixing Widgets . . ."
 
 					# download edge webview installer
 					Get-FileFromWeb -URL "https://msedge.sf.dl.delivery.mp.microsoft.com/filestreamingservice/files/304fddef-b073-4e0a-b1ff-c2ea02584017/MicrosoftEdgeWebview2Setup.exe" -File "$env:TEMP\EdgeWebView.exe"
@@ -119,14 +114,28 @@ while ($true) {
 					# Windows Web Experience App
 					Get-AppXPackage -AllUsers *MicrosoftWindows.Client.WebExperience* | ForEach-Object {Add-AppxPackage -DisableDevelopmentMode -Register -ErrorAction SilentlyContinue "$($_.InstallLocation)\AppXManifest.xml"}
 
-					# Update Apps with Winget if present
+					# Install Start Experiences App and Update all Apps with Winget
 					if (Get-Command winget -ErrorAction SilentlyContinue) {
-   		 				winget upgrade --all --accept-source-agreements --no-progress --accept-package-agreements | Out-Null
+
+						winget.exe install --id "9PC1H9VN18CM" --exact --source msstore --accept-source-agreements --disable-interactivity --silent --accept-package-agreements --force
+					
 					} else {
+
+    					[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+    					Invoke-Expression ((New-Object Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1')) | Out-Null
+    					choco.exe install winget -y --force --ignore-checksums --quiet | Out-Null
+
+			        	# Start Experiences App
+						winget.exe install --id "9PC1H9VN18CM" --exact --source msstore --accept-source-agreements --disable-interactivity --silent --accept-package-agreements --force
+
 					}
+   		 			
+					# Update all Apps
+					winget upgrade --all --accept-source-agreements --no-progress --accept-package-agreements | Out-Null
+
+					Clear-Host
 
 					# STORE
-					Clear-Host
 					Write-Host "Installing: Store. Please wait . . ."
 					# install store
 					Get-AppXPackage -AllUsers *Microsoft.WindowsStore* | ForEach-Object {Add-AppxPackage -DisableDevelopmentMode -Register -ErrorAction SilentlyContinue "$($_.InstallLocation)\AppXManifest.xml"}
@@ -157,15 +166,20 @@ exit
 			    	Start-Process -FilePath $batPath -WindowStyle Hidden -Wait
 		    
 			    	try {
-			        	# Open Start Experiences App page
-						Start-Process "ms-windows-store://pdp/?ProductId=9PC1H9VN18CM"
-			    	}catch{
+
+						# Downloads and Updates
+						# Start-Process "ms-windows-store://downloadsandupdates"
+
+			    	} catch {
+
 						# Install Store with a different method
 			        	Get-FileFromWeb -URL "https://github.com/ManuelBiscotti/test/raw/refs/heads/main/tools/MS_Store.msix" -File "$env:TEMP\MS_Store.msix"
 			        	Clear-Host
 			        	Start-Process "$env:TEMP\MS_Store.msix" -Wait
-						# Open Start Experiences App page
-						Start-Process "ms-windows-store://pdp/?ProductId=9PC1H9VN18CM"
+
+						# Downloads and Updates
+						# Start-Process "ms-windows-store://downloadsandupdates"
+
 			    	}
 										
 				}else{Write-Host $_.Exception.Message -ForegroundColor Red}
