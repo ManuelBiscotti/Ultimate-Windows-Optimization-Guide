@@ -383,7 +383,7 @@ Windows Registry Editor Version 5.00
 ; system responsiveness 100%
 [HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile]
 "NetworkThrottlingIndex"=dword:ffffffff
-"SystemResponsiveness"=dword:00000000
+"SystemResponsiveness"=dword:0000000a
 
 ; cpu priority for gaming
 [HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Audio]

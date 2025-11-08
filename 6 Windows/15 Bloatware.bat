@@ -39,7 +39,7 @@ function show-menu {
     Write-Host " 7. Install: Remote Desktop Connection"
     Write-Host " 8. Install: Legacy Snipping Tool W10"
     Write-Host " 9. Install: Legacy Paint W10"
-    Write-Host "10. Install: Microsoft Text Input Application"
+    Write-Host "10. Install: GameInput"
 }
 	show-menu
     while ($true) {
@@ -158,8 +158,8 @@ function show-menu {
 				# (KB5001716)	
 				cmd /c "MsiExec.exe /X{B8D93870-98D1-4980-AFCA-E26563CDFB79} /qn >nul 2>&1"	
 				# uninstall microsoft gameinput	
-				# cmd /c "MsiExec.exe /X{F563DC73-9550-F772-B4BF-2F72C83F9F30} /qn >nul 2>&1"	
-				# cmd /c "MsiExec.exe /X{0812546C-471E-E343-DE9C-AECF3D0137E6} /qn >nul 2>&1"	
+				cmd /c "MsiExec.exe /X{F563DC73-9550-F772-B4BF-2F72C83F9F30} /qn >nul 2>&1"	
+				cmd /c "MsiExec.exe /X{0812546C-471E-E343-DE9C-AECF3D0137E6} /qn >nul 2>&1"	
 				# stop onedrive running	
 				Stop-Process -Force -Name OneDrive -ErrorAction SilentlyContinue | Out-Null	
 				# uninstall onedrive w10	
@@ -186,14 +186,14 @@ function show-menu {
 				        } while ($true)
 				    }
 				}
-								
+				<#				
 				# kill Microsoft Text Input Application	
 				cmd /c "taskkill /F /IM TextInputHost.exe >nul 2>&1"	
 				$d=Get-ChildItem "$env:SystemRoot\SystemApps" -Dir -Filter "MicrosoftWindows.Client.CBS_*"|Select-Object -First 1 -ExpandProperty FullName	
 				if($d){$x=Join-Path $d "TextInputHost.exe"	
 				if(Test-Path $x){cmd /c "takeown /f `"$x`" >nul 2>&1 & icacls `"$x`" /grant *S-1-3-4:F >nul 2>&1 & move /y `"$x`" `"$env:SystemRoot\TextInputHost.exe.bak`" >nul 2>&1"}	
 				}
-
+				#>
 	            # Create System Properties Start menu shortcut
 	            $t="$env:ProgramData\Microsoft\Windows\Start Menu\Programs\Administrative Tools\System Properties.lnk"
 	            $s=(New-Object -ComObject WScript.Shell).CreateShortcut($t)
@@ -454,20 +454,25 @@ exit
 				
 			}    
 			10 {
+			
+				Write-Host "Installing: GameInput . . ."
+					
+				if (Get-Command winget -ErrorAction SilentlyContinue) {
+					winget.exe install --id "Microsoft.GameInput" --exact --source winget --accept-source-agreements --disable-interactivity --silent  --accept-package-agreements --force --no-progress | Out-Null
+				} else {
+				
+					$exe = "$env:TEMP\7zip.exe"
+					$url = (Invoke-RestMethod "https://api.github.com/repos/ip7z/7zip/releases/latest").assets |
+						Where-Object { $_.name -like "*x64.exe" } |
+						Select-Object -First 1 -ExpandProperty browser_download_url						
+					Get-FileFromWeb $url -File $exe					
+					Start-Process -FilePath $exe -ArgumentList '/S' -Wait
+						
+					Get-FileFromWeb -URL "https://www.nuget.org/api/v2/package/Microsoft.GameInput" -File "$env:TEMP\microsoft.gameinput.nupkg"						
+					$zip = "$env:ProgramFiles\7-Zip\7z.exe"
+					Start-Process $zip -ArgumentList "x `"$env:TEMP\microsoft.gameinput.nupkg`" -o`"$env:TEMP`" -y" -Wait						
+					Start-Process "msiexec.exe" -ArgumentList "/i `"$env:TEMP\redist\GameInputRedist.msi`" /quiet /norestart" -Wait
 
-				Clear-Host
-				Write-Host "Installing: Microsoft Text Input Application . . ."	
-				$backupPath = Join-Path $env:SystemRoot "TextInputHost.exe.bak"
-				$systemAppPath = Get-ChildItem "$env:SystemRoot\SystemApps" -Directory -Filter "MicrosoftWindows.Client.CBS_*" | Select-Object -First 1 -ExpandProperty FullName
-				if ($systemAppPath -and (Test-Path $backupPath)) {
-    				$originalPath = Join-Path $systemAppPath "TextInputHost.exe"
-    				takeown /f $originalPath /a > $null 2>&1
-    				icacls $originalPath /reset > $null 2>&1
-    				if (Test-Path $originalPath) { Remove-Item $originalPath -Force }
-    				Move-Item -Path $backupPath -Destination $originalPath -Force
-    				icacls $originalPath /reset > $null 2>&1
-    				Start-Process $originalPath
-    				Start-Process taskmgr
 				}
 
 			}    

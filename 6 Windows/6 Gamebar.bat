@@ -28,8 +28,8 @@ function Get-FileFromWeb {
     $r.Close(); $w.Close(); $resp.Close()
 }
 
-Write-Host "1. Gaming: Off (Recommended)"
-Write-Host "2. Gaming: Default"
+Write-Host "1. Gamebar Xbox: Off (Recommended)"
+Write-Host "2. Gamebar Xbox: Default"
 while ($true) {
     $choice = Read-Host " "
     if ($choice -match '^[1-2]$') {
@@ -101,11 +101,7 @@ Windows Registry Editor Version 5.00
 				Get-AppxPackage -allusers *Microsoft.Xbox.TCUI* | Remove-AppxPackage
 				Get-AppxPackage -allusers *Microsoft.XboxApp* | Remove-AppxPackage
 				Get-AppxPackage -allusers *Microsoft.XboxIdentityProvider* | Remove-AppxPackage
-				Get-AppxPackage -allusers *Microsoft.XboxSpeechToTextOverlay* | Remove-AppxPackage			    
-				# Uninstall Microsoft GameInput
-				Write-Output "Uninstalling Microsoft GameInput..."
-				Start-Process "msiexec.exe" -ArgumentList '/x {F563DC73-9550-F772-B4BF-2F72C83F9F30} /qn /norestart'
-				Start-Process "msiexec.exe" -ArgumentList '/x {0812546C-471E-E343-DE9C-AECF3D0137E6} /qn /norestart'			    
+				Get-AppxPackage -allusers *Microsoft.XboxSpeechToTextOverlay* | Remove-AppxPackage		    
 				# Remove Gaming Services
 				Write-Output "Removing Gaming Services . . ."
 				Get-AppxPackage -allusers *Microsoft.GamingServices* | Remove-AppxPackage
@@ -169,12 +165,12 @@ Windows Registry Editor Version 5.00
 				# start gamebar repair too
 				Start-Process -wait "$env:TEMP\GamingRepairTool.exe"
 				# FIX XBOX SIGN IN
-				# enable uac
+				# enable UAC
 				New-Item -Path "Registry::HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" -ErrorAction SilentlyContinue | Out-Null
 				New-ItemProperty -Path "Registry::HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" -Name "EnableLUA" -value "1" -PropertyType Dword -ErrorAction SilentlyContinue | Out-Null
 				Set-ItemProperty -Path "Registry::HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" -Name "EnableLUA" -value "1" -ErrorAction SilentlyContinue | Out-Null
 				# download edge webview installer
-				Write-Host "Installing: Edge Webview . . ."   
+				Write-Host "Installing: Edge Webview . . ."
 				# fix edge blocks
 				. ([ScriptBlock]::Create((Invoke-RestMethod 'https://github.com/ManuelBiscotti/test/raw/refs/heads/main/functions/Invoke-EdgeFix.ps1')))
 				Invoke-EdgeFix
@@ -187,27 +183,6 @@ Windows Registry Editor Version 5.00
 				# Install Gaming Service App
 				Write-Host "Installing: Gaming Services . . ."
 				Get-AppXPackage -AllUsers *Microsoft.GamingServices* | ForEach-Object {Add-AppxPackage -DisableDevelopmentMode -Register -ErrorAction SilentlyContinue "$($_.InstallLocation)\AppXManifest.xml"}
-				# GAMEINPUT
-				Write-Host "Installing: GameInput . . ."
-				try {
-					if (Get-Command winget -ErrorAction SilentlyContinue) {
-						winget.exe install --id "Microsoft.GameInput" --exact --source winget --accept-source-agreements --disable-interactivity --silent  --accept-package-agreements --force # --no-progress | Out-Null
-					} else {	
-						. ([ScriptBlock]::Create((Invoke-RestMethod 'https://github.com/ManuelBiscotti/test/raw/refs/heads/main/functions/Invoke-Winget.ps1')))
-						Invoke-Winget
-						winget.exe install --id "Microsoft.GameInput" --exact --source winget --accept-source-agreements --disable-interactivity --silent --accept-package-agreements --force # --no-progress | Out-Null
-					}
-				} catch {   
-					Write-Host $_.Exception.Message -ForegroundColor Red 
-					Timeout /T 5 | Out-Null
-				}
-				# Update all Apps
-				try {
-					winget upgrade --all --accept-source-agreements --accept-package-agreements
-				} catch {
-					Write-Host $_.Exception.Message -ForegroundColor Red
-					Timeout /T 5 | Out-Null
-				}
 
                 Clear-Host
                 Write-Host "Restart to apply . . ."
