@@ -736,10 +736,8 @@ Windows Registry Editor Version 5.00
 ; disable automatic updates
 [HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU]
 "AUOptions"=dword:00000002
-; Breaks 'Receive updates for other Microsoft products'
-; "NoAutoUpdate"=dword:00000001
-; enable notifications for security updates only (do not auto-download)
-; "AutoInstallMinorUpdates"=dword:00000000
+; "NoAutoUpdate"=dword:00000001 ; Breaks 'Receive updates for other Microsoft products'
+; "AutoInstallMinorUpdates"=dword:00000000 ; enable notifications for security updates only (do not auto-download)
 
 ; prevent automatic upgrade to windows 11 and defer quality updates for 1 year
 [HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate]
@@ -774,11 +772,12 @@ Windows Registry Editor Version 5.00
 [HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Device Metadata]
 "PreventDeviceMetadataFromNetwork"=dword:00000001
 
+; disable driver searching & updates
 [HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\DriverSearching]
 "DontSearchWindowsUpdate"=dword:00000001
+"SearchOrderConfig"=dword:00000000
 
 ; disable delivery optimization
-; gray out settings [ optional ]
 ; [HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\DeliveryOptimization]
 ; "DODownloadMode"=dword:00000000
 
@@ -929,10 +928,6 @@ Windows Registry Editor Version 5.00
 [HKEY_CURRENT_USER\SOFTWARE\Microsoft\Siuf\Rules]
 "NumberOfSIUFInPeriod"=dword:00000000
 "PeriodInNanoSeconds"=-
-
-; disable store my activity history on this device 
-[HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\System]
-"PublishUserActivities"=dword:00000000
 
 
 
@@ -1589,6 +1584,7 @@ E0,F6,C5,D5,0E,CA,50,00,00
 ; disable activity history
 [HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\System]
 "EnableActivityFeed"=dword:00000000
+"PublishUserActivities"=dword:00000000
 "UploadUserActivities"=dword:00000000
 
 ; disbale Location [ optional ]
@@ -1611,6 +1607,38 @@ E0,F6,C5,D5,0E,CA,50,00,00
 ; Disable NCSI Active Probing
 [HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\NetworkConnectivityStatusIndicator]
 "NoActiveProbe"=dword:00000001
+
+; Disable Network Telemetry
+[HKEY_LOCAL_MACHINE\Software\Microsoft\PolicyManager\default\WiFi\AllowWiFiHotSpotReporting]
+"Value"=dword:00000000
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\PolicyManager\default\WiFi\AllowAutoConnectToWiFiSenseHotspots]
+"Value"=dword:00000000
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Remote Assistance]
+"fAllowToGetHelp"=dword:00000000
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\DeliveryOptimization\Config]
+"DODownloadMode"=dword:00000001
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\DeliveryOptimization]
+"DODownloadMode"=dword:00000000
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\NetworkConnectivityStatusIndicator]
+"NoActiveProbe"=dword:00000001
+
+[HKEY_LOCAL_MACHINE\System\CurrentControlSet\Services\NlaSvc\Parameters\Internet]
+"EnableActiveProbing"=dword:00000000
+"ActiveWebProbeHost"=""
+"ActiveWebProbeHostV6"=""
+"ActiveWebProbePath"=""
+"ActiveWebProbePathV6"=""
+"ActiveWebProbeContent"=""
+"ActiveWebProbeContentV6"=""
+"ActiveDnsProbeContent"=""
+"ActiveDnsProbeContentV6"=""
+"ActiveDnsProbeHost"=""
+"ActiveDnsProbeHostV6"=""
 
 
 
@@ -1745,10 +1773,6 @@ E0,F6,C5,D5,0E,CA,50,00,00
 ; disable menu show delay
 [HKEY_CURRENT_USER\Control Panel\Desktop]
 "MenuShowDelay"="0"
-
-; disable driver searching & updates
-[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\DriverSearching]
-"SearchOrderConfig"=dword:00000000
 
 ; mouse fix (no accel with epp on)
 [HKEY_CURRENT_USER\Control Panel\Mouse]
@@ -3608,23 +3632,23 @@ E0,F6,C5,D5,0E,CA,50,00,00
 				bcdedit /set hypervisorlaunchtype off | Out-Null 	
 				bcdedit /set vsmlaunchtype Off | Out-Null     	
 				bcdedit /set vm No | Out-Null           	
-				bcdedit /set isolatedcontext No | Out-Null	
-				bcdedit /set useplatformclock no | Out-Null      	
+				bcdedit /set isolatedcontext No | Out-Null
+				bcdedit /set useplatformclock no | Out-Null	
 				bcdedit /set tscsyncpolicy Enhanced | Out-Null
 				# forces Windows to use logical destination mode for interrupts
-				# bcdedit /set usephysicaldestination no | Out-Null 	
-				bcdedit /set bootmenupolicy Legacy | Out-Null     	
-				bcdedit /set quietboot yes | Out-Null             	
-				bcdedit /set bootux disabled | Out-Null           	
-				bcdedit /set bootlog no | Out-Null                	
-				bcdedit /timeout 3 | Out-Null     	
-				bcdedit /event off | Out-Null                 	
+				# bcdedit /set usephysicaldestination no | Out-Null
+				bcdedit /set bootmenupolicy Legacy | Out-Null	
+				bcdedit /set quietboot yes | Out-Null    
+				bcdedit /set bootux disabled | Out-Null        	
+				bcdedit /set bootlog no | Out-Null       	
+				bcdedit /timeout 3 | Out-Null
+				bcdedit /event off | Out-Null     	
 				bcdedit /bootdebug off | Out-Null
-				bcdedit /set debug no | Out-Null         	
-				bcdedit /set ems no | Out-Null              	
+				bcdedit /set debug no | Out-Null	
+				bcdedit /set ems no | Out-Null
 				bcdedit /set bootems no | Out-Null
 				# disable legacy APIC
-				# bcdedit /set uselegacyapicmode no | Out-Null	
+				# bcdedit /set uselegacyapicmode no | Out-Null
 				bcdedit /set sos no | Out-Null
 				
 				# Windows 10 Stuff
@@ -3658,7 +3682,10 @@ public class Wallpaper {
 
 				# Windows 11 Stuff
 				elseif ((Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion').CurrentBuild -ge 22000) {
-
+					
+					# Global timer resolution requests (Windows 11)
+					reg.exe add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\kernel" /v "GlobalTimerResolutionRequests" /t REG_DWORD /d 1 /f *> $null
+					
 					# Set Desktop Wallpaper and Style
 					Add-Type @"
 using System.Runtime.InteropServices;
@@ -4390,6 +4417,11 @@ Windows Registry Editor Version 5.00
 "Start"=dword:00000003
 "FailureActions"=hex:84,03,00,00,00,00,00,00,00,00,00,00,03,00,00,00,14,00,00,\
   00,01,00,00,00,c0,d4,01,00,01,00,00,00,e0,93,04,00,00,00,00,00,00,00,00,00
+
+; driver searching & updates
+[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\DriverSearching]
+"DontSearchWindowsUpdate"=dword:00000000
+"SearchOrderConfig"=dword:00000001
 
 
 
@@ -5134,6 +5166,7 @@ show all taskbar icons
 ; enable activity history
 [HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\System]
 "EnableActivityFeed"=dword:00000001
+"PublishUserActivities"=dword:00000001
 "UploadUserActivities"=dword:00000001
 
 ; enable location
@@ -5286,10 +5319,6 @@ show all taskbar icons
 ; menu show delay
 [HKEY_CURRENT_USER\Control Panel\Desktop]
 "MenuShowDelay"="400"
-
-; driver searching & updates
-[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\DriverSearching]
-"SearchOrderConfig"=dword:00000001
 
 ; mouse (default accel with epp on)
 [HKEY_CURRENT_USER\Control Panel\Mouse]
@@ -8613,7 +8642,12 @@ _dpctimeout"=-
 				bcdedit /set ems off
 				bcdedit /set bootems off
 				bcdedit /set sos off
-
+				
+				# Windows 11 Stuff
+				if ((Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion').CurrentBuild -ge 22000) {								
+					reg.exe delete "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\kernel" /v "GlobalTimerResolutionRequests" /f *> $null
+				}
+				
 				# import reg file
 				Regedit.exe /S "$env:TEMP\Registry Defaults.reg"
 				Clear-Host

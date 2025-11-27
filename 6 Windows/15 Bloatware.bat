@@ -92,7 +92,7 @@ function show-menu {
 
 				Write-Host "Uninstalling: UWP Features. Please wait . . ."	
 				# uninstall all uwp features	
-				# network drivers, media player, paint & notepad left out	
+				# network drivers, media player & notepad left out	
 				Remove-WindowsCapability -Online -Name "App.StepsRecorder~~~~0.0.1.0" | Out-Null	
 				Remove-WindowsCapability -Online -Name "App.Support.QuickAssist~~~~0.0.1.0" | Out-Null	
 				Remove-WindowsCapability -Online -Name "Browser.InternetExplorer~~~~0.0.11.0" | Out-Null	
